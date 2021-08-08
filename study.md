@@ -8,5 +8,13 @@
 - third_party/electron_node/... -> Node.js 프로젝트 (.gclient_entries 확인)
 - 각 electron API의 Intialize 시그니쳐에 대한 정보: https://nodejs.org/api/addons.html#addons_context_aware_addons
 
+## 폴더별
+Windows 기준으로 보는 정리 중
+### electron.lib
+- shell/app/browser/*
+    - app, BrowserWindow, WebContents
+- shell/app/render/*
+    - ipcRenderer
+
 # 참고 URL
 - https://cameronnokes.com/blog/deep-dive-into-electron's-main-and-renderer-processes/
