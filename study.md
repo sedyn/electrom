@@ -18,3 +18,4 @@ Windows 기준으로 보는 정리 중
 
 # 참고 URL
 - https://cameronnokes.com/blog/deep-dive-into-electron's-main-and-renderer-processes/
+- https://stackoverflow.com/questions/9475792/how-does-require-in-node-js-work
