@@ -10,7 +10,7 @@
 
 ## 폴더별
 Windows 기준으로 보는 정리 중
-### electron.lib
+
 - shell/app/browser/*
     - app, BrowserWindow, WebContents
 - shell/app/render/*
@@ -19,3 +19,17 @@ Windows 기준으로 보는 정리 중
 # 참고 URL
 - https://cameronnokes.com/blog/deep-dive-into-electron's-main-and-renderer-processes/
 - https://stackoverflow.com/questions/9475792/how-does-require-in-node-js-work
+
+# 봐야할 파일들
+- module_system.cc
+    - ModuleSystem::AddRoutes
+        - require, loadScript 참고
+
+- builtins-api.cc ~> electron 모듈 객체 생성시 호출됨
+
+- third_party/electron_node/src/node.cc
+    - `StartExecution`
+        - (lib/)internal/main/run_amin_module.js
+- third_party/electron_node/src/api/environment.cc
+    - `LoadEnvironment`
+- third_party/electron_node/src/node_main_instance.cc
