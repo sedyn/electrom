@@ -1,4 +1,4 @@
-package com.electrom.node.app
+package com.electrom.node.ipc.model
 
 data class IpcMessage(
     val originId: String,

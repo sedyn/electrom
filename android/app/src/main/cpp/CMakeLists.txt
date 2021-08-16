@@ -14,6 +14,8 @@ project("node")
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
+include_directories(include/node/)
+
 add_library( # Sets the name of the library.
         node
 
