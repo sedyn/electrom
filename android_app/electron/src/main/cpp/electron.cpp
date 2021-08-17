@@ -1,7 +1,7 @@
+#include "node.h"
 #include <jni.h>
 #include <string>
 #include <cstdlib>
-#include "node.h"
 #include <pthread.h>
 #include <unistd.h>
 #include <android/log.h>
