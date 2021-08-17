@@ -17,6 +17,7 @@ class ElectronApp private constructor(
     companion object {
         init {
             System.loadLibrary("electron")
+            System.loadLibrary("node")
         }
 
         fun with(context: Context, targetViewGroup: ViewGroup): ElectronApp {

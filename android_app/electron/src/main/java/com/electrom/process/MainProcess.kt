@@ -29,10 +29,14 @@ class MainProcess(
     }
 
     private fun startRendererProcess() {
-        Log.d("electron", "test")
+        Log.d("electron", "Renderer process started by %s".format(processId))
     }
 
     override fun run() {
-        startMainModule(arrayOf(mainPath))
+        startMainModule(
+            arrayOf(
+                "node", "-e", "console.log('hello!')"
+            )
+        )
     }
 }
