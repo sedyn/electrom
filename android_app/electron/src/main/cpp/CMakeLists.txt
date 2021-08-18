@@ -14,7 +14,7 @@ project("electron")
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-include_directories("node")
+include_directories("libnode/include/node")
 
 add_library( # Sets the name of the library.
         electron
@@ -23,6 +23,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
+        log.cpp
         electron.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
