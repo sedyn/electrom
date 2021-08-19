@@ -21,22 +21,38 @@ using v8::SealHandleScope;
 using v8::Value;
 using v8::V8;
 
+using v8::String;
+
 struct AndroidContext {
     JNIEnv *env;
     jobject obj;
 
     void StartRendererProcess() const {
+        jstring jstr = env->NewStringUTF("test");
+
         jclass cls = env->GetObjectClass(obj);
-        jmethodID mid = env->GetMethodID(cls, "startRendererProcess", "()V");
-        env->CallVoidMethod(obj, mid);
+        jmethodID mid = env->GetMethodID(cls, "startRendererProcess", "(Ljava/lang/String;)V");
+        env->CallVoidMethod(obj, mid, jstr);
     }
 };
 
-struct AndroidContext* aCtx;
+struct AndroidContext *aCtx;
 
-void TestMethod(const v8::FunctionCallbackInfo<Value>& args) {
+void TestMethod(const v8::FunctionCallbackInfo<Value> &args) {
     aCtx->StartRendererProcess();
 }
+
+const char *LOADER =
+        "const publicRequire = function(modulePath) {"
+        "  if (modulePath === 'electron') { " // intercept electron module require
+        "    return electron"
+        "  } else {"
+        "    require('module').createRequire(process.cwd() + '/');"
+        "  }"
+        "};"
+        "globalThis.require = publicRequire;"
+        "const mainCode = require('fs').readFileSync(process.argv[1]);"
+        "require('vm').runInThisContext(mainCode);";
 
 jint RunNodeInstance(MultiIsolatePlatform *platform,
                      const std::vector<std::string> &args,
@@ -81,13 +97,14 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
 
         NODE_SET_METHOD(context->Global(), "startRenderer", &TestMethod);
 
-        MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(
-                env.get(),
-                "const publicRequire ="
-                "  require('module').createRequire(process.cwd() + '/');"
-                "globalThis.require = publicRequire;"
-                "globalThis.embedVars = { nön_ascıı: '🏳️‍🌈' };startRenderer();"
-                "require('vm').runInThisContext(process.argv[1]);");
+        Local<v8::Object> electronObj = v8::Object::New(isolate);
+
+        electronObj->Set(String::NewFromUtf8(isolate, "x"), String::NewFromUtf8(isolate, "a"));
+        NODE_SET_METHOD(electronObj, "a", &TestMethod);
+
+        context->Global()->Set(String::NewFromUtf8(isolate, "electron"), electronObj);
+
+        MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(env.get(), LOADER);
 
         if (loadenv_ret.IsEmpty())  // There has been a JS exception.
             return 1;
@@ -184,7 +201,7 @@ Java_com_electrom_process_MainProcess_startMainModule(
         return exit_code;
     }
 
-    std::unique_ptr<MultiIsolatePlatform> platform = MultiIsolatePlatform::Create(1);
+    std::unique_ptr<MultiIsolatePlatform> platform = MultiIsolatePlatform::Create(2);
     V8::InitializePlatform(platform.get());
     V8::Initialize();
 

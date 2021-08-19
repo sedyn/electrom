@@ -2,16 +2,16 @@ package com.electrom
 
 import android.content.Context
 import android.view.ViewGroup
+import com.electrom.extension.copyElectronAssetFolder
 import com.electrom.ipc.IpcBridge
 import com.electrom.process.ElectronProcess
 import com.electrom.process.MainProcess
-import java.io.File
 import java.util.*
 
 
 class ElectronApp private constructor(
-    private val context: Context,
-    private val viewGroup: ViewGroup
+    val context: Context,
+    val viewGroup: ViewGroup
 ) {
 
     companion object {
@@ -21,6 +21,7 @@ class ElectronApp private constructor(
         }
 
         fun with(context: Context, targetViewGroup: ViewGroup): ElectronApp {
+            context.copyElectronAssetFolder()
             return ElectronApp(
                 context,
                 targetViewGroup
@@ -31,21 +32,10 @@ class ElectronApp private constructor(
     private lateinit var mainProcess: ElectronProcess
     private val rendererProcesses: MutableList<ElectronProcess> = LinkedList()
 
-    private val ipcBridge = IpcBridge()
-
-    private fun copyElectronAssets() {
-        val electronAssetsPath = context.applicationContext.filesDir.absolutePath + "/electron-assets"
-        val electronAssetsReference = File(electronAssetsPath)
-        if (electronAssetsReference.exists()) {
-            electronAssetsReference.delete()
-        }
-    }
+    val ipcBridge = IpcBridge()
 
     fun startMainProcess() {
-        mainProcess = MainProcess(
-            mainPath = "electron_app/app.js",
-            ipcBridge = ipcBridge
-        )
+        mainProcess = MainProcess(this, "electron_app/app.js")
 
         val mainProcessThread = Thread(mainProcess)
         mainProcessThread.start()
