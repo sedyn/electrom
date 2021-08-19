@@ -20,6 +20,7 @@ using v8::MaybeLocal;
 using v8::SealHandleScope;
 using v8::Value;
 using v8::V8;
+using v8::Object;
 
 using v8::String;
 
@@ -45,7 +46,7 @@ void TestMethod(const v8::FunctionCallbackInfo<Value> &args) {
 const char *LOADER =
         "const publicRequire = function(modulePath) {"
         "  if (modulePath === 'electron') { " // intercept electron module require
-        "    return electron"
+        "    return globalThis.electron"
         "  } else {"
         "    require('module').createRequire(process.cwd() + '/');"
         "  }"
@@ -53,6 +54,39 @@ const char *LOADER =
         "globalThis.require = publicRequire;"
         "const mainCode = require('fs').readFileSync(process.argv[1]);"
         "require('vm').runInThisContext(mainCode);";
+
+void Electron_BrowserWindowClass(const v8::FunctionCallbackInfo<Value> &args) {
+    Isolate* isolate = args.GetIsolate();
+    Local<Object> properties = args[0]->ToObject(isolate);
+    Local<String> json = v8::JSON::Stringify(isolate->GetCurrentContext(), properties).ToLocalChecked();
+    char buffer[1024] = { 0, };
+    json->WriteUtf8(isolate, buffer);
+    log(ANDROID_LOG_INFO, buffer);
+}
+
+void Electron_BrowserWindowClass_loadURL(const v8::FunctionCallbackInfo<Value> &args) {
+    Isolate* isolate = args.GetIsolate();
+    Local<String> str = args[0]->ToString(isolate);
+    char buffer[1024] = { 0, };
+    str->WriteUtf8(isolate, buffer);
+    log(ANDROID_LOG_INFO, buffer);
+}
+
+void SetElectronModule(Isolate* isolate, Local<v8::Object> module) {
+    Local<Context> context = isolate->GetCurrentContext();
+
+    Local<Object> appObj = Object::New(isolate);
+
+    module->Set(String::NewFromUtf8(isolate, "app"), appObj);
+
+    v8::Local<v8::FunctionTemplate> BrowserWindowClass = v8::FunctionTemplate::New(isolate, &Electron_BrowserWindowClass);
+    NODE_SET_PROTOTYPE_METHOD(BrowserWindowClass, "loadURL", &Electron_BrowserWindowClass_loadURL);
+
+    v8::Local<v8::Function> fn = BrowserWindowClass->GetFunction(context).ToLocalChecked();
+    v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, "BrowserWindow", v8::NewStringType::kInternalized).ToLocalChecked();
+    fn->SetName(fn_name);
+    module->Set(context, fn_name, fn).Check();
+}
 
 jint RunNodeInstance(MultiIsolatePlatform *platform,
                      const std::vector<std::string> &args,
@@ -99,10 +133,10 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
 
         Local<v8::Object> electronObj = v8::Object::New(isolate);
 
-        electronObj->Set(String::NewFromUtf8(isolate, "x"), String::NewFromUtf8(isolate, "a"));
-        NODE_SET_METHOD(electronObj, "a", &TestMethod);
+        SetElectronModule(isolate, electronObj);
 
         context->Global()->Set(String::NewFromUtf8(isolate, "electron"), electronObj);
+        context->Global()->Set(String::NewFromUtf8(isolate, "__dirname"), String::NewFromUtf8(isolate, "__android"));
 
         MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(env.get(), LOADER);
 
