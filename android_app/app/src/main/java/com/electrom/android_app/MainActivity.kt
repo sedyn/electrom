@@ -14,8 +14,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         electronApp = ElectronApp.with(
-            applicationContext,
-            findViewById<ConstraintLayout>(R.id.container)
+            this, findViewById<ConstraintLayout>(R.id.container)
         )
     }
 

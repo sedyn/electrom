@@ -1,3 +1,3 @@
 function hello() {
-    alert('Hello from Renderer!')
+    alert('hello from renderer')
 }

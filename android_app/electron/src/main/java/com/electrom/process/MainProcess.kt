@@ -3,6 +3,7 @@ package com.electrom.process
 import android.util.Log
 import com.electrom.ElectronApp
 import com.electrom.extension.appData
+import com.electrom.extension.toObject
 import com.electrom.ipc.model.IpcMessage
 import java.util.*
 
@@ -28,7 +29,7 @@ class MainProcess(
     private fun startRendererProcess(properties: String) {
         Log.d("electron", "Renderer process started by %s".format(processId))
         val rendererProcessThread =
-            Thread(RendererProcess(electronApp, mapOf("backgroundColor" to "#ff0000")))
+            Thread(RendererProcess(electronApp, properties.toObject()))
         rendererProcessThread.start()
     }
 

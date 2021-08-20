@@ -1,7 +1,7 @@
 # TODO
 - [x] nodejs-mobile Setup
     - [x] Redirect stdout, stderr to Logcat
-    - [x] Create Node.js embedded enviroment
+    - [x] Create Node.js embedded environment
 - [ ] ElectronApp
     - [ ] MainProcess
         - [x] Integrate with nodejs-mobile

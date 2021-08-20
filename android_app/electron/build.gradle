@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    compileSdk 31
+    compileSdk 30
 
     defaultConfig {
         minSdk 23
-        targetSdk 31
+        targetSdk 30
         versionCode 1
         versionName "1.0"
 
@@ -44,6 +44,7 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    compileSdkVersion 30
 }
 
 dependencies {
@@ -54,4 +55,9 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+
+    implementation "com.fasterxml.jackson.core:jackson-core:2.9.9"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:2.9.9"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.9.9"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.9"
 }

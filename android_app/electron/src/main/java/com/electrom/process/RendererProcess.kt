@@ -1,16 +1,20 @@
 package com.electrom.process
 
 import android.graphics.Color
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import com.electrom.ElectronApp
+import com.electrom.extension.appData
+import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
+import java.io.File
 import java.util.*
 
 class RendererProcess(
     private val electronApp: ElectronApp,
-    private val browserWindowProperties: Map<String, Any>
+    private val browserWindowProperties: BrowserWindowProperty
 ) : ElectronProcess {
 
     override val processId: String = UUID.randomUUID().toString()
@@ -25,11 +29,15 @@ class RendererProcess(
             }
             electronApp.viewGroup.addView(electronWebView)
 
-            browserWindowProperties["backgroundColor"]?.also {
-                electronWebView.setBackgroundColor(Color.parseColor(it as String))
+            browserWindowProperties.run {
+                backgroundColor?.also {
+                    electronWebView.setBackgroundColor(Color.parseColor(it))
+                }
             }
 
-            electronWebView.loadData("<html><body>Hello!</body></html>", "text/html", "utf8")
+            val externalTarget = "${electronApp.context.appData}/electron_app/index.html"
+
+            electronWebView.loadUrl(Uri.fromFile(File(externalTarget)).toString())
         }
     }
 

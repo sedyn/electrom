@@ -4,6 +4,7 @@
 #include <string>
 
 #include "log.h"
+#include "helper.h"
 
 #include <android/log.h>
 
@@ -21,15 +22,27 @@ using v8::SealHandleScope;
 using v8::Value;
 using v8::V8;
 using v8::Object;
-
 using v8::String;
+
+const char *LOADER =
+        "const publicRequire = require('module').createRequire(process.cwd() + '/');"
+        "const electronRequire = function(modulePath) {"
+        "  if (modulePath === 'electron') { " // intercept electron module require
+        "    return globalThis.electron"
+        "  } else {"
+        "    return publicRequire"
+        "  }"
+        "};"
+        "globalThis.require = electronRequire;"
+        "const mainCode = require('fs').readFileSync(process.argv[1]);"
+        "require('vm').runInThisContext(mainCode);";
 
 struct AndroidContext {
     JNIEnv *env;
     jobject obj;
 
-    void StartRendererProcess() const {
-        jstring jstr = env->NewStringUTF("test");
+    void StartRendererProcess(const char *propertiesJson) const {
+        jstring jstr = env->NewStringUTF(propertiesJson);
 
         jclass cls = env->GetObjectClass(obj);
         jmethodID mid = env->GetMethodID(cls, "startRendererProcess", "(Ljava/lang/String;)V");
@@ -37,53 +50,34 @@ struct AndroidContext {
     }
 };
 
-struct AndroidContext *aCtx;
-
-void TestMethod(const v8::FunctionCallbackInfo<Value> &args) {
-    aCtx->StartRendererProcess();
-}
-
-const char *LOADER =
-        "const publicRequire = function(modulePath) {"
-        "  if (modulePath === 'electron') { " // intercept electron module require
-        "    return globalThis.electron"
-        "  } else {"
-        "    require('module').createRequire(process.cwd() + '/');"
-        "  }"
-        "};"
-        "globalThis.require = publicRequire;"
-        "const mainCode = require('fs').readFileSync(process.argv[1]);"
-        "require('vm').runInThisContext(mainCode);";
+struct AndroidContext *androidEnv;
 
 void Electron_BrowserWindowClass(const v8::FunctionCallbackInfo<Value> &args) {
-    Isolate* isolate = args.GetIsolate();
+    Isolate *isolate = args.GetIsolate();
     Local<Object> properties = args[0]->ToObject(isolate);
-    Local<String> json = v8::JSON::Stringify(isolate->GetCurrentContext(), properties).ToLocalChecked();
-    char buffer[1024] = { 0, };
-    json->WriteUtf8(isolate, buffer);
-    log(ANDROID_LOG_INFO, buffer);
+    androidEnv->StartRendererProcess(stringify(isolate, properties).c_str());
 }
 
 void Electron_BrowserWindowClass_loadURL(const v8::FunctionCallbackInfo<Value> &args) {
-    Isolate* isolate = args.GetIsolate();
-    Local<String> str = args[0]->ToString(isolate);
-    char buffer[1024] = { 0, };
-    str->WriteUtf8(isolate, buffer);
-    log(ANDROID_LOG_INFO, buffer);
+    Isolate *isolate = args.GetIsolate();
+    String::Utf8Value i(isolate, args[0]->ToString(isolate));
+    log(ANDROID_LOG_INFO, std::string(*i).c_str());
 }
 
-void SetElectronModule(Isolate* isolate, Local<v8::Object> module) {
+void SetElectronModule(Isolate *isolate, Local<v8::Object> module) {
     Local<Context> context = isolate->GetCurrentContext();
 
     Local<Object> appObj = Object::New(isolate);
 
     module->Set(String::NewFromUtf8(isolate, "app"), appObj);
 
-    v8::Local<v8::FunctionTemplate> BrowserWindowClass = v8::FunctionTemplate::New(isolate, &Electron_BrowserWindowClass);
+    v8::Local<v8::FunctionTemplate> BrowserWindowClass = v8::FunctionTemplate::New(isolate,
+                                                                                   &Electron_BrowserWindowClass);
     NODE_SET_PROTOTYPE_METHOD(BrowserWindowClass, "loadURL", &Electron_BrowserWindowClass_loadURL);
 
     v8::Local<v8::Function> fn = BrowserWindowClass->GetFunction(context).ToLocalChecked();
-    v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, "BrowserWindow", v8::NewStringType::kInternalized).ToLocalChecked();
+    v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, "BrowserWindow",
+                                                            v8::NewStringType::kInternalized).ToLocalChecked();
     fn->SetName(fn_name);
     module->Set(context, fn_name, fn).Check();
 }
@@ -129,14 +123,13 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
                 node::CreateEnvironment(isolate_data.get(), context, args, exec_args),
                 node::FreeEnvironment);
 
-        NODE_SET_METHOD(context->Global(), "startRenderer", &TestMethod);
-
         Local<v8::Object> electronObj = v8::Object::New(isolate);
 
         SetElectronModule(isolate, electronObj);
 
         context->Global()->Set(String::NewFromUtf8(isolate, "electron"), electronObj);
-        context->Global()->Set(String::NewFromUtf8(isolate, "__dirname"), String::NewFromUtf8(isolate, "__android"));
+        context->Global()->Set(String::NewFromUtf8(isolate, "__dirname"),
+                               String::NewFromUtf8(isolate, "__android"));
 
         MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(env.get(), LOADER);
 
@@ -176,7 +169,7 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
     int err = uv_loop_close(&loop);
     assert(err == 0);
 
-    return 0;
+    return exit_code;
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -222,7 +215,7 @@ Java_com_electrom_process_MainProcess_startMainModule(
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
-    aCtx = new AndroidContext{env, obj};
+    androidEnv = new AndroidContext{env, obj};
 
     argv = uv_setup_args(argc, argv);
     std::vector<std::string> args(argv, argv + argc);
