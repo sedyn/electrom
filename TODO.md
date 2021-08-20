@@ -1,12 +1,18 @@
 # TODO
-- [ ] `app` module
-    - [ ] `whenReady` function
-    - [ ] EventEmitter
-- [ ] `BrowserWindow` module
-    - [ ] `loadFile` function
-- [ ] IPC
-    - [ ] ipcMain
-    - [ ] ipcRenderer
+- [x] nodejs-mobile Setup
+    - [x] Redirect stdout, stderr to Logcat
+    - [x] Create Node.js embedded enviroment
+- [ ] ElectronApp
+    - [ ] MainProcess
+        - [x] Integrate with nodejs-mobile
+        - [ ] Implement `BrowserWindow` API
+        - [ ] Implement `app` API
+    - [ ] RendererProcess
+- [ ] ElectronWebView
+    - [ ] Support ipcRenderer
+- [ ] CLI
+    - [ ] APK build
+
 
 # Links
 - https://github.com/JaneaSystems/nodejs-mobile
