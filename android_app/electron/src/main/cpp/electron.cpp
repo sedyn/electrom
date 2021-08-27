@@ -8,34 +8,33 @@
 
 #include <android/log.h>
 
+#include "electron_api_app.h"
+
 using node::ArrayBufferAllocator;
 using node::Environment;
 using node::IsolateData;
 using node::MultiIsolatePlatform;
-using v8::Context;
-using v8::HandleScope;
-using v8::Isolate;
-using v8::Local;
-using v8::Locker;
-using v8::MaybeLocal;
-using v8::SealHandleScope;
-using v8::Value;
-using v8::V8;
-using v8::Object;
-using v8::String;
+using namespace v8;
 
 const char *LOADER =
+        "const electron = globalThis.electron;"
+        "console.log(electron);"
+        "delete globalThis.electron;" // Environment를 현재는 접근할 수 없어서 이 방식을 선택한다.
         "const publicRequire = require('module').createRequire(process.cwd() + '/');"
+        "electron.app = electron.initApp(publicRequire('events').EventEmitter.prototype);"
         "const electronRequire = function(modulePath) {"
         "  if (modulePath === 'electron') { " // intercept electron module require
-        "    return globalThis.electron"
+        "    return electron;"
         "  } else {"
-        "    return publicRequire"
+        "    return publicRequire;"
         "  }"
         "};"
+        "console.log(electron);"
         "globalThis.require = electronRequire;"
         "const mainCode = require('fs').readFileSync(process.argv[1]);"
-        "require('vm').runInThisContext(mainCode);";
+        "require('vm').runInThisContext(mainCode);"
+        "electron.app.emit('ready');"
+        "console.log('after ready');";
 
 struct AndroidContext {
     JNIEnv *env;
@@ -58,26 +57,22 @@ void Electron_BrowserWindowClass(const v8::FunctionCallbackInfo<Value> &args) {
     androidEnv->StartRendererProcess(stringify(isolate, properties).c_str());
 }
 
-void Electron_BrowserWindowClass_loadURL(const v8::FunctionCallbackInfo<Value> &args) {
+void Electron_BrowserWindowClass_loadURL(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     String::Utf8Value i(isolate, args[0]->ToString(isolate));
     log(ANDROID_LOG_INFO, std::string(*i).c_str());
 }
 
-void SetElectronModule(Isolate *isolate, Local<v8::Object> module) {
+void SetElectronModule(Isolate *isolate, Local<Object> module) {
     Local<Context> context = isolate->GetCurrentContext();
 
-    Local<Object> appObj = Object::New(isolate);
+    RegisterApp(isolate, module);
 
-    module->Set(String::NewFromUtf8(isolate, "app"), appObj);
-
-    v8::Local<v8::FunctionTemplate> BrowserWindowClass = v8::FunctionTemplate::New(isolate,
-                                                                                   &Electron_BrowserWindowClass);
+    v8::Local<v8::FunctionTemplate> BrowserWindowClass = v8::FunctionTemplate::New(isolate, &Electron_BrowserWindowClass);
     NODE_SET_PROTOTYPE_METHOD(BrowserWindowClass, "loadURL", &Electron_BrowserWindowClass_loadURL);
 
     v8::Local<v8::Function> fn = BrowserWindowClass->GetFunction(context).ToLocalChecked();
-    v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, "BrowserWindow",
-                                                            v8::NewStringType::kInternalized).ToLocalChecked();
+    v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, "BrowserWindow", v8::NewStringType::kInternalized).ToLocalChecked();
     fn->SetName(fn_name);
     module->Set(context, fn_name, fn).Check();
 }
@@ -238,4 +233,15 @@ Java_com_electrom_process_MainProcess_startMainModule(
     V8::ShutdownPlatform();
 
     return ret;
+}
+
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_electrom_ElectronApp_emit(
+        JNIEnv *env,
+        jobject obj,
+        jobjectArray arguments) {
+
+    get()->Emit("ready", 0, nullptr);
+    return 0;
 }
