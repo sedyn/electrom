@@ -17,6 +17,7 @@ class ElectronWebView(electronApp: ElectronApp) : WebView(electronApp.context) {
             allowFileAccess = true
 
             // Resolve CORS policy for http requests
+            // https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/cors-and-webview-api.md
             allowUniversalAccessFromFileURLs = true
 
             webViewClient = object : WebViewClient() {
