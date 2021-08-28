@@ -25,7 +25,11 @@ add_library( # Sets the name of the library.
         # Provides a relative path to your source file(s).
         log.cpp
         helper.cpp
+        android_context.cpp
+
         electron_api_app.cpp
+        electron_api_browser_window.cpp
+
         electron.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a

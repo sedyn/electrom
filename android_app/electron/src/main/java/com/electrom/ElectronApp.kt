@@ -1,6 +1,9 @@
 package com.electrom
 
+import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.ViewGroup
 import com.electrom.extension.copyElectronAssetFolder
 import com.electrom.ipc.IpcBridge
@@ -15,6 +18,7 @@ import java.util.concurrent.TimeUnit
 
 
 class ElectronApp private constructor(
+    private val activity: Activity,
     val context: Context,
     val viewGroup: ViewGroup
 ) {
@@ -25,10 +29,12 @@ class ElectronApp private constructor(
             System.loadLibrary("node")
         }
 
-        fun with(context: Context, targetViewGroup: ViewGroup): ElectronApp {
+        fun with(activity: Activity, targetViewGroup: ViewGroup): ElectronApp {
             // TODO: copy assets files only when changed
+            val context: Context = activity
             context.copyElectronAssetFolder()
             return ElectronApp(
+                activity,
                 context,
                 targetViewGroup
             )
@@ -51,6 +57,12 @@ class ElectronApp private constructor(
         Collections.synchronizedList(LinkedList())
 
     val ipcBridge = IpcBridge()
+
+    internal fun setTitle(title: String) {
+        Handler(Looper.getMainLooper()).post {
+            activity.title = title
+        }
+    }
 
     internal fun requestRendererProcess(browserWindowProperty: BrowserWindowProperty) {
         if (rendererProcesses.size > 1) {

@@ -3,13 +3,11 @@ package com.electrom.view
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
-import android.webkit.JsResult
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.webkit.*
+import com.electrom.ElectronApp
 
-@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
-class ElectronWebView(context: Context) : WebView(context) {
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ViewConstructor")
+class ElectronWebView(electronApp: ElectronApp) : WebView(electronApp.context) {
 
     private val electronInterface: ElectronInterface
 
@@ -18,7 +16,14 @@ class ElectronWebView(context: Context) : WebView(context) {
             javaScriptEnabled = true
             allowFileAccess = true
 
-            webViewClient = WebViewClient()
+            // Resolve CORS policy for http requests
+            allowUniversalAccessFromFileURLs = true
+
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView, url: String) {
+                    electronApp.setTitle(view.title ?: "<electron>")
+                }
+            }
             webChromeClient = object : WebChromeClient() {
                 override fun onJsAlert(
                     view: WebView?,

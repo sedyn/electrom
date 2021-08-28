@@ -23,7 +23,7 @@ class RendererProcess(
     private fun attachWebViewOnStart() {
         val wg = CountDownLatch(1)
         Handler(Looper.getMainLooper()).post {
-            val electronWebView = ElectronWebView(electronApp.context).apply {
+            val electronWebView = ElectronWebView(electronApp).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT

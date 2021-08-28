@@ -1,0 +1,2 @@
+.gold,.gold small{background-color:gold;color:#403600}.silver,.silver small{background-color:silver;color:#404040}.oil,.oil small{background-color:#000;color:#e5e5e5}.container-fluid,body,html{height:100%}.row{height:33.33333333%}.row>div{position:relative;top:50%;transform:translateY(-50%)}.price{padding-right:5px}.change:before{content:"("}.change:after{content:")"}.price:before{content:"$"}.change:empty,.price:empty{display:none}
+/*# sourceMappingURL=/styles.2cd28774.css.map */
