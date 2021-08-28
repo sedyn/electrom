@@ -33,3 +33,10 @@ Windows 기준으로 보는 정리 중
 - third_party/electron_node/src/api/environment.cc
     - `LoadEnvironment`
 - third_party/electron_node/src/node_main_instance.cc
+
+- shell/browser/api/electron_api_event_emitter.cc
+    - SetEventEmitterPrototype
+        - EventEmitter를 주입받는 방식?
+        - native require에서는 internal 모듈만 접근할 수 있기 때문에
+        - require('module').createRequire()를 통해서 접근해야한다. 
+    - shell/browser/event_emitter_mixin.cc
