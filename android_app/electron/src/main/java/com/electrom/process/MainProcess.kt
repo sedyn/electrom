@@ -2,10 +2,10 @@ package com.electrom.process
 
 import android.util.Log
 import com.electrom.ElectronApp
+import com.electrom.extension.ELECTRON_ASSETS_FOLDER
 import com.electrom.extension.LOG_TAG
 import com.electrom.extension.appData
 import com.electrom.extension.toObject
-import com.electrom.ipc.model.IpcMessage
 import java.util.*
 
 class MainProcess(
@@ -17,26 +17,29 @@ class MainProcess(
 
     private external fun startMainModule(arguments: Array<String>): Int
 
-    private fun sendTo(sourceId: String, data: String) {
-        electronApp.ipcBridge.mainSendTo(
-            IpcMessage(
-                originId = processId,
-                targetId = sourceId,
-                data = data
-            )
-        )
+    private lateinit var peerRendererProcess: RendererProcess
+
+    private fun startRendererProcess(properties: String): String {
+        Log.d("electron", "Renderer process started by $processId")
+        peerRendererProcess = electronApp.requestRendererProcess(properties.toObject())
+        return peerRendererProcess.processId
     }
 
-    private fun startRendererProcess(properties: String) {
-        Log.d("electron", "Renderer process started by $processId")
-        electronApp.requestRendererProcess(properties.toObject())
+    private fun commandToRendererProcess(command: String, arguments: String?) {
+        Log.d(LOG_TAG, "CALL -> $command($arguments)")
+        when (command) {
+            "loadURL" -> {
+                peerRendererProcess.loadUrl(arguments!!)
+            }
+        }
     }
 
     override fun run() {
         Log.d(LOG_TAG, "Main process started in $processId")
         startMainModule(
             arrayOf(
-                "node", "${electronApp.context.appData}/$mainPath"
+                "${electronApp.context.appData}/${ELECTRON_ASSETS_FOLDER}",
+                mainPath
             )
         )
     }

@@ -7,7 +7,7 @@ import java.io.File
 val Context.appData: String
     get() = this.filesDir.absolutePath
 
-private const val ELECTRON_ASSETS_FOLDER = "electron_app"
+const val ELECTRON_ASSETS_FOLDER = "electron_app"
 
 private fun copyAsset(assetManager: AssetManager, fromAssetPath: String, toPath: String) {
     assetManager.open(fromAssetPath).use { stream ->

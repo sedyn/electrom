@@ -12,6 +12,7 @@ import com.electrom.process.MainProcess
 import com.electrom.process.RendererProcess
 import com.electrom.process.data.BrowserWindowProperty
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -30,8 +31,8 @@ class ElectronApp private constructor(
         }
 
         fun with(activity: Activity, targetViewGroup: ViewGroup): ElectronApp {
-            // TODO: copy assets files only when changed
             val context: Context = activity
+            // TODO: copy assets files only when changed
             context.copyElectronAssetFolder()
             return ElectronApp(
                 activity,
@@ -43,8 +44,6 @@ class ElectronApp private constructor(
         const val THREAD_POOL_SIZE = 2
     }
 
-    external fun emit(arguments: Array<String>): Int
-
     private val threadPoolExecutor = ThreadPoolExecutor(
         THREAD_POOL_SIZE,
         THREAD_POOL_SIZE,
@@ -53,8 +52,7 @@ class ElectronApp private constructor(
         SynchronousQueue()
     )
     private lateinit var mainProcess: ElectronProcess
-    private val rendererProcesses: MutableList<ElectronProcess> =
-        Collections.synchronizedList(LinkedList())
+    private val rendererProcesses: MutableMap<String, ElectronProcess> = ConcurrentHashMap()
 
     val ipcBridge = IpcBridge()
 
@@ -64,18 +62,19 @@ class ElectronApp private constructor(
         }
     }
 
-    internal fun requestRendererProcess(browserWindowProperty: BrowserWindowProperty) {
-        if (rendererProcesses.size > 1) {
+    internal fun requestRendererProcess(browserWindowProperty: BrowserWindowProperty): RendererProcess {
+        if (rendererProcesses.isNotEmpty()) {
             TODO("throw max renderer process exception")
         }
 
         val rendererProcess = RendererProcess(this, browserWindowProperty)
-        rendererProcesses.add(rendererProcess)
+        rendererProcesses[rendererProcess.processId] = rendererProcess
         threadPoolExecutor.execute(rendererProcess)
+        return rendererProcess
     }
 
     fun startMainProcess() {
-        mainProcess = MainProcess(this, "electron_app/app.js")
+        mainProcess = MainProcess(this, "app.js")
         threadPoolExecutor.execute(mainProcess)
     }
 

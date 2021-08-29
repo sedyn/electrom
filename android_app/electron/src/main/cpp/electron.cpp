@@ -20,7 +20,6 @@ using namespace v8;
 
 const char *LOADER =
         "const electron = globalThis.electron;"
-        "console.log(electron);"
         "delete globalThis.electron;" // Environment를 현재는 접근할 수 없어서 이 방식을 선택한다.
         "const publicRequire = require('module').createRequire(process.cwd() + '/');"
         "globalThis.initializeWithEventEmitter(electron, publicRequire('events').EventEmitter.prototype);"
@@ -53,7 +52,8 @@ void InitializeWithEventEmitter(const FunctionCallbackInfo<Value> &args) {
 
 jint RunNodeInstance(MultiIsolatePlatform *platform,
                      const std::vector<std::string> &args,
-                     const std::vector<std::string> &exec_args) {
+                     const std::vector<std::string> &exec_args,
+                     const char *base_path) {
     int exit_code = 0;
     uv_loop_t loop;
     int ret = uv_loop_init(&loop);
@@ -99,7 +99,7 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
         auto globalThis = context->Global();
 
         globalThis->Set(context, String::NewFromUtf8(isolate, "electron"), electronObj).Check();
-        globalThis->Set(context, String::NewFromUtf8(isolate, "__dirname"), String::NewFromUtf8(isolate, "__android")).Check();
+        globalThis->Set(context, String::NewFromUtf8(isolate, "__dirname"), String::NewFromUtf8(isolate, base_path)).Check();
         NODE_SET_METHOD(globalThis, "initializeWithEventEmitter", &InitializeWithEventEmitter);
 
         MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(env.get(), LOADER);
@@ -148,39 +148,19 @@ Java_com_electrom_process_MainProcess_startMainModule(
         JNIEnv *env,
         jobject obj,
         jobjectArray arguments) {
-    jsize argc = env->GetArrayLength(arguments);
+    auto storagePath = (jstring) env->GetObjectArrayElement(arguments, 0);
+    auto mainEntryFilePath = (jstring) env->GetObjectArrayElement(arguments, 1);
 
-    //Compute byte size need for all arguments in contiguous memory.
-    int c_arguments_size = 0;
-    for (int i = 0; i < argc; i++) {
-        c_arguments_size += strlen(
-                env->GetStringUTFChars((jstring) env->GetObjectArrayElement(arguments, i), 0));
-        c_arguments_size++; // for '\0'
-    }
+    const char *basePath = env->GetStringUTFChars(storagePath, 0);
 
-    //Stores arguments in contiguous memory.
-    char *args_buffer = (char *) calloc(c_arguments_size, sizeof(char));
+    char fullPath[env->GetStringUTFLength(storagePath) + env->GetStringUTFLength(mainEntryFilePath) + 2];
+    sprintf(fullPath, "%s/%s", basePath, env->GetStringUTFChars(mainEntryFilePath, 0));
 
-    //argv to pass into node.
+    int argc = 2;
     char **argv = new char *[argc];
 
-    //To iterate through the expected start position of each argument in args_buffer.
-    char *current_args_position = args_buffer;
-
-    //Populate the args_buffer and argv.
-    for (int i = 0; i < argc; i++) {
-        const char *current_argument = env->GetStringUTFChars(
-                (jstring) env->GetObjectArrayElement(arguments, i), 0);
-
-        //Copy current argument to its expected position in args_buffer
-        strncpy(current_args_position, current_argument, strlen(current_argument));
-
-        //Save current argument start position in argv
-        argv[i] = current_args_position;
-
-        //Increment to the next argument's expected position.
-        current_args_position += strlen(current_args_position) + 1;
-    }
+    argv[0] = (char *) "node";
+    argv[1] = fullPath;
 
     if (start_redirecting_stdout_stderr() == -1) {
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
@@ -203,21 +183,10 @@ Java_com_electrom_process_MainProcess_startMainModule(
     V8::InitializePlatform(platform.get());
     V8::Initialize();
 
-    int ret = RunNodeInstance(platform.get(), args, exec_args);
+    int ret = RunNodeInstance(platform.get(), args, exec_args, basePath);
 
     V8::Dispose();
     V8::ShutdownPlatform();
 
     return ret;
-}
-
-
-extern "C" JNIEXPORT jint JNICALL
-Java_com_electrom_ElectronApp_emit(
-        JNIEnv *env,
-        jobject obj,
-        jobjectArray arguments) {
-
-    app()->Emit("ready", 0, nullptr);
-    return 0;
 }

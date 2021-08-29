@@ -7,12 +7,28 @@ using namespace v8;
 void BrowserWindowConstructor(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> properties = args[0]->ToObject(isolate);
-    android()->StartRendererProcess(stringify(properties).c_str());
+
+    Local<Object> browserWindow = args.Holder();
+    const char *processId = android()->StartRendererProcess(stringify(properties).c_str());
+
+    browserWindow->Set(String::NewFromUtf8(isolate, "id"), String::NewFromUtf8(isolate, processId));
 }
 
-void loadUrl(const FunctionCallbackInfo<Value> &args) {
+void loadURL(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
-    String::Utf8Value i(isolate, args[0]->ToString(isolate));
+    Local<Context> context = isolate->GetCurrentContext();
+
+    Local<String> url = args[0]->ToString(isolate);
+
+    android()->CommandToRendererProcess(__func__, std::string(*String::Utf8Value(isolate, url)).c_str());
+
+//    auto resolver = Promise::Resolver::New(context).ToLocalChecked();
+//    args.GetReturnValue().Set(resolver->GetPromise());
+}
+
+void show(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    android()->CommandToRendererProcess(__func__, nullptr);
 }
 
 void RegisterBrowserWindow(Local<Object> electron, Local<Object> eventEmitter) {
@@ -23,10 +39,10 @@ void RegisterBrowserWindow(Local<Object> electron, Local<Object> eventEmitter) {
 
     Local<FunctionTemplate> BrowserWindowTemplate = FunctionTemplate::New(isolate, &BrowserWindowConstructor);
     BrowserWindowTemplate->SetClassName(browserWindowName);
-    NODE_SET_PROTOTYPE_METHOD(BrowserWindowTemplate, "loadURL", &loadUrl);
+    NODE_SET_PROTOTYPE_METHOD(BrowserWindowTemplate, "loadURL", &loadURL);
+    NODE_SET_PROTOTYPE_METHOD(BrowserWindowTemplate, "show", &show);
 
     Local<Function> BrowserWindow = BrowserWindowTemplate->GetFunction(context).ToLocalChecked();
-    BrowserWindow->Set(String::NewFromUtf8(isolate, "id"),  Number::New(isolate, 1));
     BrowserWindow->SetName(browserWindowName);
 
     // event_emitter_mixin.cc 참고

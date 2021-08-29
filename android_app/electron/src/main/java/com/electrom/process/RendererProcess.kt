@@ -1,15 +1,12 @@
 package com.electrom.process
 
 import android.graphics.Color
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import com.electrom.ElectronApp
-import com.electrom.extension.appData
 import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
-import java.io.File
 import java.util.*
 import java.util.concurrent.CountDownLatch
 
@@ -19,30 +16,58 @@ class RendererProcess(
 ) : ElectronProcess {
 
     override val processId: String = UUID.randomUUID().toString()
+    private lateinit var webView: ElectronWebView
+    private var attached = false
 
-    private fun attachWebViewOnStart() {
+    private inline fun awaitMainLooper(crossinline block: () -> Unit) {
         val wg = CountDownLatch(1)
         Handler(Looper.getMainLooper()).post {
-            val electronWebView = ElectronWebView(electronApp).apply {
+            block()
+            wg.countDown()
+        }
+        wg.await()
+    }
+
+    private fun internalShow() {
+        if (!attached) {
+            attached = true
+            electronApp.viewGroup.addView(webView)
+        }
+    }
+
+    private fun attachWebViewOnStart() {
+        awaitMainLooper {
+            webView = ElectronWebView(electronApp).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
             }
-            electronApp.viewGroup.addView(electronWebView)
 
             browserWindowProperties.run {
                 backgroundColor?.also {
-                    electronWebView.setBackgroundColor(Color.parseColor(it))
+                    webView.setBackgroundColor(Color.parseColor(it))
+                }
+
+                show?.also {
+                    if (show) {
+                        internalShow()
+                    }
                 }
             }
-
-            val externalTarget = "${electronApp.context.appData}/electron_app/index.html"
-
-            electronWebView.loadUrl(Uri.fromFile(File(externalTarget)).toString())
-            wg.countDown()
         }
-        wg.await()
+    }
+
+    internal fun loadUrl(url: String) {
+        awaitMainLooper {
+            webView.loadUrl(url)
+        }
+    }
+
+    internal fun show() {
+        awaitMainLooper {
+            internalShow()
+        }
     }
 
     override fun run() {
