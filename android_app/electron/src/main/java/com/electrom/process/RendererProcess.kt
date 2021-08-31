@@ -3,6 +3,7 @@ package com.electrom.process
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.ViewGroup
 import com.electrom.ElectronApp
 import com.electrom.process.data.BrowserWindowProperty
@@ -17,7 +18,6 @@ class RendererProcess(
 
     override val processId: String = UUID.randomUUID().toString()
     private lateinit var webView: ElectronWebView
-    private var attached = false
 
     private inline fun awaitMainLooper(crossinline block: () -> Unit) {
         val wg = CountDownLatch(1)
@@ -26,13 +26,6 @@ class RendererProcess(
             wg.countDown()
         }
         wg.await()
-    }
-
-    private fun internalShow() {
-        if (!attached) {
-            attached = true
-            electronApp.viewGroup.addView(webView)
-        }
     }
 
     private fun attachWebViewOnStart() {
@@ -50,10 +43,12 @@ class RendererProcess(
                 }
 
                 show?.also {
-                    if (show) {
-                        internalShow()
+                    if (!show) {
+                        webView.visibility = View.INVISIBLE
                     }
                 }
+
+                electronApp.viewGroup.addView(webView)
             }
         }
     }
@@ -66,7 +61,7 @@ class RendererProcess(
 
     internal fun show() {
         awaitMainLooper {
-            internalShow()
+            webView.visibility = View.VISIBLE
         }
     }
 

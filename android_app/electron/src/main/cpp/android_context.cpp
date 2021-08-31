@@ -1,13 +1,30 @@
+#include <thread>
 #include "android_context.h"
 
-AndroidContext *android() {
-    static auto *android_context = new AndroidContext;
-    return android_context;
+using namespace v8;
+
+JavaVM *globalVM = nullptr;
+AndroidContext *androidContext = nullptr;
+jobject globalRef = nullptr;
+
+jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    globalVM = vm;
+    return JNI_VERSION_1_6;
 }
 
-void AndroidContext::init(JNIEnv *_env, jobject _obj) {
-    env = _env;
-    obj = _obj;
+AndroidContext *android() {
+    return androidContext;
+}
+
+void InitAndroidContext(JNIEnv *env, jobject obj) {
+    if (androidContext != nullptr) {
+        return;
+    }
+
+    androidContext = new AndroidContext;
+    androidContext->env = env;
+    androidContext->obj = obj;
+    globalRef = env->NewGlobalRef(obj);
 }
 
 void AndroidContext::CommandToRendererProcess(const char *command, const char *argument) const {
@@ -32,4 +49,27 @@ const char *AndroidContext::StartRendererProcess(const char *propertiesJson) con
 
     const char *rendererId = env->GetStringUTFChars(returnVal, nullptr);
     return rendererId;
+}
+
+void internalThread(AndroidThread func, void *data) {
+    JNIEnv *env = nullptr;
+    globalVM->AttachCurrentThread(&env, nullptr);
+    if (env == nullptr) {
+        globalVM->DetachCurrentThread();
+        return;
+    }
+
+    auto internalAndroidContext = new AndroidContext;
+    internalAndroidContext->env = env;
+    internalAndroidContext->obj = globalRef;
+
+    func(internalAndroidContext, data);
+    free(internalAndroidContext);
+
+    globalVM->DetachCurrentThread();
+}
+
+void RequestThread(AndroidThread func, void *data) {
+    // https://stackoverflow.com/questions/42066700/ndk-c-stdthread-abort-crash-on-join
+    std::thread(internalThread, func, data).detach();
 }

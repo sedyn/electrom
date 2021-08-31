@@ -27,6 +27,7 @@ app.once('ready', () => {
 
   // Show window when page is ready
   window.once('ready-to-show', () => {
+    console.log('ready-to-show')
     window.show()
   })
 })

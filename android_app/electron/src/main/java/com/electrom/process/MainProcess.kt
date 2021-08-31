@@ -20,7 +20,7 @@ class MainProcess(
     private lateinit var peerRendererProcess: RendererProcess
 
     private fun startRendererProcess(properties: String): String {
-        Log.d("electron", "Renderer process started by $processId")
+        Log.d(LOG_TAG, "Renderer process started by $processId")
         peerRendererProcess = electronApp.requestRendererProcess(properties.toObject())
         return peerRendererProcess.processId
     }
@@ -30,6 +30,9 @@ class MainProcess(
         when (command) {
             "loadURL" -> {
                 peerRendererProcess.loadUrl(arguments!!)
+            }
+            "show" -> {
+                peerRendererProcess.show()
             }
         }
     }

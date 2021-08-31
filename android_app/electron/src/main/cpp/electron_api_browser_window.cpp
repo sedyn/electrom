@@ -1,6 +1,9 @@
 #include "electron_api_browser_window.h"
 #include "android_context.h"
 #include "helper.h"
+#include "libnode/include/node/uv.h"
+
+#include <thread>
 
 using namespace v8;
 
@@ -14,16 +17,67 @@ void BrowserWindowConstructor(const FunctionCallbackInfo<Value> &args) {
     browserWindow->Set(String::NewFromUtf8(isolate, "id"), String::NewFromUtf8(isolate, processId));
 }
 
+struct Item {
+    Persistent<String> *url;
+    Persistent<Promise::Resolver> *resolver;
+    Persistent<Object> *holder;
+};
+
+void callbackLoadURL(const AndroidContext *ctx, void *data) {
+    auto msg = [](uv_async_t *handle) {
+        auto data = (Item*) handle->data;
+
+        Isolate *isolate = Isolate::GetCurrent();
+        HandleScope handle_scope(isolate);
+        Local<Context> context = isolate->GetCurrentContext();
+
+        Local<Promise::Resolver> resolver = data->resolver->Get(isolate);
+        Local<String> url = data->url->Get(isolate);
+        Local<Object> holder = data->holder->Get(isolate);
+
+        android()->CommandToRendererProcess("loadURL", std::string(*String::Utf8Value(isolate, url)).c_str());
+        resolver->Resolve(context, String::NewFromUtf8(isolate, "test")).Check();
+
+        Local<Value> argv[] = {
+                (Local<Value>) String::NewFromUtf8(isolate, "ready-to-show"),
+        };
+
+        holder->Get(String::NewFromUtf8(isolate, "emit")).As<Function>()->Call(context, holder, 1, argv).ToLocalChecked();
+        delete data->url;
+        delete data->resolver;
+        delete data->holder;
+        free(data);
+        uv_close((uv_handle_t*) handle, [](uv_handle_t* handle) {
+            delete handle;
+        });
+    };
+
+    auto async = new uv_async_t();
+    uv_loop_t *loop = uv_default_loop();
+    uv_async_init(loop, async, msg);
+
+    async->data = data;
+
+    uv_async_send(async);
+}
+
 void loadURL(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
 
     Local<String> url = args[0]->ToString(isolate);
 
-    android()->CommandToRendererProcess(__func__, std::string(*String::Utf8Value(isolate, url)).c_str());
+    auto resolver = Promise::Resolver::New(context).ToLocalChecked();
 
-//    auto resolver = Promise::Resolver::New(context).ToLocalChecked();
-//    args.GetReturnValue().Set(resolver->GetPromise());
+    auto data = new Item{
+            new Persistent<String>(isolate, url),
+            new Persistent<Promise::Resolver>(isolate, resolver),
+            new Persistent<Object>(isolate, args.Holder())
+    };
+
+    RequestThread(callbackLoadURL, data);
+
+    args.GetReturnValue().Set(resolver->GetPromise());
 }
 
 void show(const FunctionCallbackInfo<Value> &args) {

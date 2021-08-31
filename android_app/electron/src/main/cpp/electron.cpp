@@ -55,8 +55,8 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
                      const std::vector<std::string> &exec_args,
                      const char *base_path) {
     int exit_code = 0;
-    uv_loop_t loop;
-    int ret = uv_loop_init(&loop);
+    uv_loop_t* loop = uv_default_loop();
+    int ret = uv_loop_init(loop);
     if (ret != 0) {
         log(ANDROID_LOG_ERROR, "Failed to initialize uv_loop");
         return 1;
@@ -64,7 +64,7 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
 
     std::shared_ptr<ArrayBufferAllocator> allocator = ArrayBufferAllocator::Create();
 
-    Isolate *isolate = NewIsolate(allocator.get(), &loop, platform);
+    Isolate *isolate = NewIsolate(allocator.get(), loop, platform);
 
     if (isolate == nullptr) {
         log(ANDROID_LOG_ERROR, "Failed to initialize V8 Isolate");
@@ -76,7 +76,7 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
         Isolate::Scope isolate_scope(isolate);
 
         std::unique_ptr<IsolateData, decltype(&node::FreeIsolateData)> isolate_data(
-                node::CreateIsolateData(isolate, &loop, platform, allocator.get()),
+                node::CreateIsolateData(isolate, loop, platform, allocator.get()),
                 node::FreeIsolateData);
 
         HandleScope handle_scope(isolate);
@@ -111,14 +111,14 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
             SealHandleScope seal(isolate);
             bool more;
             do {
-                uv_run(&loop, UV_RUN_DEFAULT);
+                uv_run(loop, UV_RUN_DEFAULT);
 
                 platform->DrainTasks(isolate);
-                more = uv_loop_alive(&loop);
+                more = uv_loop_alive(loop);
                 if (more) continue;
 
                 node::EmitBeforeExit(env.get());
-                more = uv_loop_alive(&loop);
+                more = uv_loop_alive(loop);
             } while (more);
         }
 
@@ -136,8 +136,8 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
 
     // Wait until the platform has cleaned up all relevant resources.
     while (!platform_finished)
-        uv_run(&loop, UV_RUN_ONCE);
-    int err = uv_loop_close(&loop);
+        uv_run(loop, UV_RUN_ONCE);
+    int err = uv_loop_close(loop);
     assert(err == 0);
 
     return exit_code;
@@ -166,7 +166,7 @@ Java_com_electrom_process_MainProcess_startMainModule(
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
-    android()->init(env, obj);
+    InitAndroidContext(env, obj);
 
     argv = uv_setup_args(argc, argv);
     std::vector<std::string> args(argv, argv + argc);
