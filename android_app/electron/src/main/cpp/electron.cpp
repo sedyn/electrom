@@ -80,6 +80,7 @@ jint RunNodeInstance(MultiIsolatePlatform *platform,
                 node::FreeIsolateData);
 
         HandleScope handle_scope(isolate);
+        // TODO Register `electron` module in object_template
         Local<Context> context = node::NewContext(isolate);
 
         if (context.IsEmpty()) {

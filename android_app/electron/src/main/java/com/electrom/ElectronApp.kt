@@ -11,7 +11,6 @@ import com.electrom.process.ElectronProcess
 import com.electrom.process.MainProcess
 import com.electrom.process.RendererProcess
 import com.electrom.process.data.BrowserWindowProperty
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -20,8 +19,8 @@ import java.util.concurrent.TimeUnit
 
 class ElectronApp private constructor(
     private val activity: Activity,
-    val context: Context,
-    val viewGroup: ViewGroup
+    internal val context: Context,
+    internal val viewGroup: ViewGroup
 ) {
 
     companion object {

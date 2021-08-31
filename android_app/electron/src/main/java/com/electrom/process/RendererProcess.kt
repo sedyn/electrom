@@ -3,9 +3,11 @@ package com.electrom.process
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import com.electrom.ElectronApp
+import com.electrom.extension.LOG_TAG
 import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
 import java.util.*
@@ -18,6 +20,10 @@ class RendererProcess(
 
     override val processId: String = UUID.randomUUID().toString()
     private lateinit var webView: ElectronWebView
+
+    init {
+        attachWebViewOnStart()
+    }
 
     private inline fun awaitMainLooper(crossinline block: () -> Unit) {
         val wg = CountDownLatch(1)
@@ -51,6 +57,7 @@ class RendererProcess(
                 electronApp.viewGroup.addView(webView)
             }
         }
+        Log.d(LOG_TAG, "after attach")
     }
 
     internal fun loadUrl(url: String) {
@@ -66,6 +73,6 @@ class RendererProcess(
     }
 
     override fun run() {
-        attachWebViewOnStart()
+        // TODO Add Looper for IPC?
     }
 }

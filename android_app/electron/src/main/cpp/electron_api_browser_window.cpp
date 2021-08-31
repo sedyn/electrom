@@ -18,7 +18,7 @@ void BrowserWindowConstructor(const FunctionCallbackInfo<Value> &args) {
 }
 
 struct Item {
-    Persistent<String> *url;
+    std::string url;
     Persistent<Promise::Resolver> *resolver;
     Persistent<Object> *holder;
 };
@@ -32,10 +32,8 @@ void callbackLoadURL(const AndroidContext *ctx, void *data) {
         Local<Context> context = isolate->GetCurrentContext();
 
         Local<Promise::Resolver> resolver = data->resolver->Get(isolate);
-        Local<String> url = data->url->Get(isolate);
         Local<Object> holder = data->holder->Get(isolate);
 
-        android()->CommandToRendererProcess("loadURL", std::string(*String::Utf8Value(isolate, url)).c_str());
         resolver->Resolve(context, String::NewFromUtf8(isolate, "test")).Check();
 
         Local<Value> argv[] = {
@@ -43,7 +41,6 @@ void callbackLoadURL(const AndroidContext *ctx, void *data) {
         };
 
         holder->Get(String::NewFromUtf8(isolate, "emit")).As<Function>()->Call(context, holder, 1, argv).ToLocalChecked();
-        delete data->url;
         delete data->resolver;
         delete data->holder;
         free(data);
@@ -59,6 +56,8 @@ void callbackLoadURL(const AndroidContext *ctx, void *data) {
     async->data = data;
 
     uv_async_send(async);
+
+    ctx->CommandToRendererProcess("loadURL", ((Item*)data)->url.c_str());
 }
 
 void loadURL(const FunctionCallbackInfo<Value> &args) {
@@ -70,7 +69,7 @@ void loadURL(const FunctionCallbackInfo<Value> &args) {
     auto resolver = Promise::Resolver::New(context).ToLocalChecked();
 
     auto data = new Item{
-            new Persistent<String>(isolate, url),
+            std::string(*String::Utf8Value(isolate, url)),
             new Persistent<Promise::Resolver>(isolate, resolver),
             new Persistent<Object>(isolate, args.Holder())
     };
