@@ -26,7 +26,7 @@ class MainProcess(
     }
 
     private fun commandToRendererProcess(command: String, arguments: String?) {
-        Log.d(LOG_TAG, "CALL -> $command($arguments)")
+        Log.d(LOG_TAG, "CALL -> $command(${arguments ?: ""})")
         when (command) {
             "loadURL" -> {
                 peerRendererProcess.loadUrl(arguments!!)
