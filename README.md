@@ -2,6 +2,9 @@
 ## Architecture
 ![architecture](./assets/architecture1.png)
 
+### android_app/app/src/main/assets/electron_app
+- 실제 electron 앱의 자바스크립트 소스코드와 에셋파일들
+
 ### android_app/electron
 - 라이브러리로 분리될 electron API 구현체
 
@@ -9,7 +12,6 @@
 #### android_context.cpp
 - `StartRendererProcess`
     - Node에서 BrowserWindow 클래스가 생성될 때 호출되는 JNI 함수
-
 - `CommandToRendererProcess`
     - Android WebView에 명령이 필요할 때 실행되는 JNI 함수
 
