@@ -15,6 +15,10 @@
 - `CommandToRendererProcess`
     - Android WebView에 명령이 필요할 때 실행되는 JNI 함수
 
+#### electron.cpp
+- `Java_com_electrom_process_MainProcess_startMainModule`
+    - electron 메인 모듈 시작 함수 Node embedded 환경을 시작한다.
+
 ### android_app/electron/src/main/java
 #### ElectronApp.kt
 - `startMainProcess`
