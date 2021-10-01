@@ -16,9 +16,8 @@ import java.util.concurrent.CountDownLatch
 class RendererProcess(
     private val electronApp: ElectronApp,
     private val browserWindowProperties: BrowserWindowProperty
-) : ElectronProcess {
+) : ElectronProcess(), Runnable {
 
-    override val processId: String = UUID.randomUUID().toString()
     private lateinit var webView: ElectronWebView
 
     init {

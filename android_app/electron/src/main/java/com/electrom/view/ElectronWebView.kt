@@ -7,7 +7,7 @@ import android.webkit.*
 import com.electrom.ElectronApp
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ViewConstructor")
-class ElectronWebView(electronApp: ElectronApp) : WebView(electronApp.context) {
+class ElectronWebView(electronApp: ElectronApp) : WebView(electronApp.activity) {
 
     private val electronInterface: ElectronInterface
 

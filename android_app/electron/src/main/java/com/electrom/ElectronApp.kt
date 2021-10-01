@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
+import com.electrom.extension.appData
 import com.electrom.extension.copyElectronAssetFolder
 import com.electrom.ipc.IpcBridge
 import com.electrom.process.ElectronProcess
@@ -18,8 +19,7 @@ import java.util.concurrent.TimeUnit
 
 
 class ElectronApp private constructor(
-    private val activity: Activity,
-    internal val context: Context,
+    internal val activity: Activity,
     internal val viewGroup: ViewGroup
 ) {
 
@@ -35,7 +35,6 @@ class ElectronApp private constructor(
             context.copyElectronAssetFolder()
             return ElectronApp(
                 activity,
-                context,
                 targetViewGroup
             )
         }
@@ -50,7 +49,6 @@ class ElectronApp private constructor(
         TimeUnit.SECONDS,
         SynchronousQueue()
     )
-    private lateinit var mainProcess: ElectronProcess
     private val rendererProcesses: MutableMap<String, ElectronProcess> = ConcurrentHashMap()
 
     val ipcBridge = IpcBridge()
@@ -60,6 +58,9 @@ class ElectronApp private constructor(
             activity.title = title
         }
     }
+
+    internal val appData: String
+        get() = (activity as Context).appData
 
     internal fun requestRendererProcess(browserWindowProperty: BrowserWindowProperty): RendererProcess {
         if (rendererProcesses.isNotEmpty()) {
@@ -73,8 +74,7 @@ class ElectronApp private constructor(
     }
 
     fun startMainProcess() {
-        mainProcess = MainProcess(this, "app.js")
-        threadPoolExecutor.execute(mainProcess)
+        MainProcess(this, "app.js").execute()
     }
 
 }

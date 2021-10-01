@@ -8,6 +8,8 @@
 
 #include <android/log.h>
 
+#include "node.h"
+#include "javascript_environment.h"
 #include "android_context.h"
 #include "electron_api_app.h"
 #include "electron_api_browser_window.h"
@@ -17,6 +19,49 @@ using node::Environment;
 using node::IsolateData;
 using node::MultiIsolatePlatform;
 using namespace v8;
+
+class ElectronMainParts {
+public:
+    ElectronMainParts();
+    void Initialize();
+    int RunMessageLoop();
+private:
+    std::unique_ptr<NodeBinding> node_binding_;
+    std::unique_ptr<JavascriptEnvironment> js_env_;
+    // std::unique_ptr<Environment> node_env_;
+};
+
+ElectronMainParts::ElectronMainParts() {
+    node_binding_ = std::make_unique<NodeBinding>();
+}
+
+void ElectronMainParts::Initialize() {
+    js_env_ = std::make_unique<JavascriptEnvironment>(node_binding_->uv_loop());
+
+    HandleScope scope(js_env_->isolate());
+
+    node_binding_->Initialize();
+
+    // TODO Binding Electron Module
+
+    Environment* env = node_binding_->CreateEnvironment(
+        js_env_->context(), js_env_->platform()
+    );
+
+    node_binding_->LoadEnvironment(env);
+    node_binding_->set_uv_env(env);
+}
+
+int ElectronMainParts::RunMessageLoop() {
+    node_binding_->PrepareMessageLoop();
+    node_binding_->RunMessageLoop();
+    return 0;
+}
+
+ElectronMainParts* main_parts() {
+    static auto* main_parts = new ElectronMainParts;
+    return main_parts;
+}
 
 const char *LOADER =
         "const electron = globalThis.electron;"
@@ -50,104 +95,99 @@ void InitializeWithEventEmitter(const FunctionCallbackInfo<Value> &args) {
     RegisterBrowserWindow(electron, eventEmitter);
 }
 
-jint RunNodeInstance(MultiIsolatePlatform *platform,
-                     const std::vector<std::string> &args,
-                     const std::vector<std::string> &exec_args,
-                     const char *base_path) {
-    int exit_code = 0;
-    uv_loop_t* loop = uv_default_loop();
-    int ret = uv_loop_init(loop);
-    if (ret != 0) {
-        log(ANDROID_LOG_ERROR, "Failed to initialize uv_loop");
-        return 1;
-    }
-
-    std::shared_ptr<ArrayBufferAllocator> allocator = ArrayBufferAllocator::Create();
-
-    Isolate *isolate = NewIsolate(allocator.get(), loop, platform);
-
-    if (isolate == nullptr) {
-        log(ANDROID_LOG_ERROR, "Failed to initialize V8 Isolate");
-        return 1;
-    }
-
-    {
-        Locker locker(isolate);
-        Isolate::Scope isolate_scope(isolate);
-
-        std::unique_ptr<IsolateData, decltype(&node::FreeIsolateData)> isolate_data(
-                node::CreateIsolateData(isolate, loop, platform, allocator.get()),
-                node::FreeIsolateData);
-
-        HandleScope handle_scope(isolate);
-        // TODO Register `electron` module in object_template
-        Local<Context> context = node::NewContext(isolate);
-
-        if (context.IsEmpty()) {
-            log(ANDROID_LOG_ERROR, "Failed to initialize V8 Context");
-            return 1;
-        }
-
-        Context::Scope context_scope(context);
-        std::unique_ptr<Environment, decltype(&node::FreeEnvironment)> env(
-                node::CreateEnvironment(isolate_data.get(), context, args, exec_args),
-                node::FreeEnvironment);
-
-        Local<v8::Object> electronObj = v8::Object::New(isolate);
-
-        SetElectronModule(electronObj);
-
-        auto globalThis = context->Global();
-
-        globalThis->Set(context, String::NewFromUtf8(isolate, "electron"), electronObj).Check();
-        globalThis->Set(context, String::NewFromUtf8(isolate, "__dirname"), String::NewFromUtf8(isolate, base_path)).Check();
-        NODE_SET_METHOD(globalThis, "initializeWithEventEmitter", &InitializeWithEventEmitter);
-
-        MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(env.get(), LOADER);
-
-        if (loadenv_ret.IsEmpty())  // There has been a JS exception.
-            return 1;
-
-        {
-            SealHandleScope seal(isolate);
-            bool more;
-            do {
-                uv_run(loop, UV_RUN_DEFAULT);
-
-                platform->DrainTasks(isolate);
-                more = uv_loop_alive(loop);
-                if (more) continue;
-
-                node::EmitBeforeExit(env.get());
-                more = uv_loop_alive(loop);
-            } while (more);
-        }
-
-        exit_code = node::EmitExit(env.get());
-
-        node::Stop(env.get());
-    }
-
-    bool platform_finished = false;
-    platform->AddIsolateFinishedCallback(isolate, [](void *data) {
-        *static_cast<bool *>(data) = true;
-    }, &platform_finished);
-    platform->UnregisterIsolate(isolate);
-    isolate->Dispose();
-
-    // Wait until the platform has cleaned up all relevant resources.
-    while (!platform_finished)
-        uv_run(loop, UV_RUN_ONCE);
-    int err = uv_loop_close(loop);
-    assert(err == 0);
-
-    return exit_code;
-}
+//jint RunNodeInstance(MultiIsolatePlatform *platform,
+//                     const std::vector<std::string> &args,
+//                     const std::vector<std::string> &exec_args,
+//                     const char *base_path) {
+//    int exit_code = 0;
+//    uv_loop_t *loop = uv_default_loop();
+//
+//    std::shared_ptr<ArrayBufferAllocator> allocator = ArrayBufferAllocator::Create();
+//
+//    Isolate *isolate = NewIsolate(allocator.get(), loop, platform);
+//
+//    if (isolate == nullptr) {
+//        log(ANDROID_LOG_ERROR, "Failed to initialize V8 Isolate");
+//        return 1;
+//    }
+//
+//    {
+//        Locker locker(isolate);
+//        Isolate::Scope isolate_scope(isolate);
+//
+//        std::unique_ptr<IsolateData, decltype(&node::FreeIsolateData)> isolate_data(
+//                node::CreateIsolateData(isolate, loop, platform, allocator.get()),
+//                node::FreeIsolateData);
+//
+//        HandleScope handle_scope(isolate);
+//        // TODO Register `electron` module in object_template
+//        Local<Context> context = node::NewContext(isolate);
+//
+//        if (context.IsEmpty()) {
+//            log(ANDROID_LOG_ERROR, "Failed to initialize V8 Context");
+//            return 1;
+//        }
+//
+//        Context::Scope context_scope(context);
+//        std::unique_ptr<Environment, decltype(&node::FreeEnvironment)> env(
+//                node::CreateEnvironment(isolate_data.get(), context, args, exec_args),
+//                node::FreeEnvironment);
+//
+//        Local<v8::Object> electronObj = v8::Object::New(isolate);
+//
+//        SetElectronModule(electronObj);
+//
+//        auto globalThis = context->Global();
+//
+//        globalThis->Set(context, String::NewFromUtf8(isolate, "electron"), electronObj).Check();
+//        globalThis->Set(context, String::NewFromUtf8(isolate, "__dirname"), String::NewFromUtf8(isolate, base_path)).Check();
+//        NODE_SET_METHOD(globalThis, "initializeWithEventEmitter", &InitializeWithEventEmitter);
+//
+//        MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(env.get(), LOADER);
+//
+//        if (loadenv_ret.IsEmpty())  // There has been a JS exception.
+//            return 1;
+//
+//        {
+//            SealHandleScope seal(isolate);
+//            bool more;
+//            do {
+//                uv_run(loop, UV_RUN_DEFAULT);
+//
+//                platform->DrainTasks(isolate);
+//                more = uv_loop_alive(loop);
+//                if (more) continue;
+//
+//                node::EmitBeforeExit(env.get());
+//                more = uv_loop_alive(loop);
+//            } while (more);
+//        }
+//
+//        exit_code = node::EmitExit(env.get());
+//
+//        node::Stop(env.get());
+//    }
+//
+//    bool platform_finished = false;
+//    platform->AddIsolateFinishedCallback(isolate, [](void *data) {
+//        *static_cast<bool *>(data) = true;
+//    }, &platform_finished);
+//    platform->UnregisterIsolate(isolate);
+//    isolate->Dispose();
+//
+//    // Wait until the platform has cleaned up all relevant resources.
+//    while (!platform_finished)
+//        uv_run(loop, UV_RUN_ONCE);
+//    int err = uv_loop_close(loop);
+//    assert(err == 0);
+//
+//    return exit_code;
+//}
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_electrom_process_MainProcess_startMainModule(
         JNIEnv *env,
-        jobject obj,
+        jobject thiz,
         jobjectArray arguments) {
     auto storagePath = (jstring) env->GetObjectArrayElement(arguments, 0);
     auto mainEntryFilePath = (jstring) env->GetObjectArrayElement(arguments, 1);
@@ -167,27 +207,29 @@ Java_com_electrom_process_MainProcess_startMainModule(
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
-    InitAndroidContext(env, obj);
+    InitAndroidContext(env, thiz);
+    main_parts()->Initialize();
+//
+//    argv = uv_setup_args(argc, argv);
+//    std::vector<std::string> args(argv, argv + argc);
+//    std::vector<std::string> exec_args;
+//    std::vector<std::string> errors;
+//
+//    int exit_code = node::InitializeNodeWithArgs(&args, &exec_args, &errors);
+//    if (exit_code != 0) {
+//        log(ANDROID_LOG_ERROR, "Failed to initialize node");
+//        return exit_code;
+//    }
+//
+//    std::unique_ptr<MultiIsolatePlatform> platform = MultiIsolatePlatform::Create(2);
+//    V8::InitializePlatform(platform.get());
+//    V8::Initialize();
+//
+//    int ret = RunNodeInstance(platform.get(), args, exec_args, basePath);
+//
+//    V8::Dispose();
+//    V8::ShutdownPlatform();
 
-    argv = uv_setup_args(argc, argv);
-    std::vector<std::string> args(argv, argv + argc);
-    std::vector<std::string> exec_args;
-    std::vector<std::string> errors;
-
-    int exit_code = node::InitializeNodeWithArgs(&args, &exec_args, &errors);
-    if (exit_code != 0) {
-        log(ANDROID_LOG_ERROR, "Failed to initialize node");
-        return exit_code;
-    }
-
-    std::unique_ptr<MultiIsolatePlatform> platform = MultiIsolatePlatform::Create(2);
-    V8::InitializePlatform(platform.get());
-    V8::Initialize();
-
-    int ret = RunNodeInstance(platform.get(), args, exec_args, basePath);
-
-    V8::Dispose();
-    V8::ShutdownPlatform();
-
-    return ret;
+    return 0;
 }
+

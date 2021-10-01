@@ -1,7 +1,9 @@
 package com.electrom.process
 
-interface ElectronProcess : Runnable {
+import java.util.*
 
-    val processId: String
+abstract class ElectronProcess {
+
+    val processId: String = UUID.randomUUID().toString()
 
 }

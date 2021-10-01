@@ -4,17 +4,17 @@ import android.util.Log
 import com.electrom.ElectronApp
 import com.electrom.extension.ELECTRON_ASSETS_FOLDER
 import com.electrom.extension.LOG_TAG
-import com.electrom.extension.appData
 import com.electrom.extension.toObject
-import java.util.*
 
-class MainProcess(
+internal class MainProcess(
     private val electronApp: ElectronApp,
     private val mainPath: String
-) : ElectronProcess {
+) : ElectronProcess() {
 
-    override val processId: String = UUID.randomUUID().toString()
-
+    /**
+     * Start mobile Node.js for main process in electron.
+     * This function starts embedded Node.js (https://nodejs.org/api/embedding.html) environment.
+     */
     private external fun startMainModule(arguments: Array<String>): Int
 
     private lateinit var peerRendererProcess: RendererProcess
@@ -37,13 +37,16 @@ class MainProcess(
         }
     }
 
-    override fun run() {
-        Log.d(LOG_TAG, "Main process started in $processId")
+    private fun startEmbeddedNodeJs() {
         startMainModule(
             arrayOf(
-                "${electronApp.context.appData}/${ELECTRON_ASSETS_FOLDER}",
+                "${electronApp.appData}/$ELECTRON_ASSETS_FOLDER",
                 mainPath
             )
         )
+    }
+
+    fun execute() {
+        startEmbeddedNodeJs()
     }
 }

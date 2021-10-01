@@ -27,6 +27,9 @@ add_library( # Sets the name of the library.
         helper.cpp
         android_context.cpp
 
+        node.cpp
+        javascript_environment.cpp
+
         electron_api_app.cpp
         electron_api_browser_window.cpp
 
