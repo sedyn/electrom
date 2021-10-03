@@ -30,6 +30,8 @@ add_library( # Sets the name of the library.
         node.cpp
         javascript_environment.cpp
 
+        electron_main_parts.cpp
+
         electron_api_app.cpp
         electron_api_browser_window.cpp
 

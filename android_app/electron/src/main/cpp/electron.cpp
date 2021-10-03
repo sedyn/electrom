@@ -8,9 +8,10 @@
 
 #include <android/log.h>
 
-#include "node.h"
-#include "javascript_environment.h"
 #include "android_context.h"
+
+#include "electron_main_parts.h"
+
 #include "electron_api_app.h"
 #include "electron_api_browser_window.h"
 
@@ -20,46 +21,8 @@ using node::IsolateData;
 using node::MultiIsolatePlatform;
 using namespace v8;
 
-class ElectronMainParts {
-public:
-    ElectronMainParts();
-    void Initialize();
-    int RunMessageLoop();
-private:
-    std::unique_ptr<NodeBinding> node_binding_;
-    std::unique_ptr<JavascriptEnvironment> js_env_;
-    // std::unique_ptr<Environment> node_env_;
-};
-
-ElectronMainParts::ElectronMainParts() {
-    node_binding_ = std::make_unique<NodeBinding>();
-}
-
-void ElectronMainParts::Initialize() {
-    js_env_ = std::make_unique<JavascriptEnvironment>(node_binding_->uv_loop());
-
-    HandleScope scope(js_env_->isolate());
-
-    node_binding_->Initialize();
-
-    // TODO Binding Electron Module
-
-    Environment* env = node_binding_->CreateEnvironment(
-        js_env_->context(), js_env_->platform()
-    );
-
-    node_binding_->LoadEnvironment(env);
-    node_binding_->set_uv_env(env);
-}
-
-int ElectronMainParts::RunMessageLoop() {
-    node_binding_->PrepareMessageLoop();
-    node_binding_->RunMessageLoop();
-    return 0;
-}
-
-ElectronMainParts* main_parts() {
-    static auto* main_parts = new ElectronMainParts;
+ElectronMainParts *main_parts() {
+    static auto *main_parts = new ElectronMainParts;
     return main_parts;
 }
 
