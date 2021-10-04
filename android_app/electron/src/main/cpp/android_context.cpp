@@ -87,6 +87,10 @@ JNIEnv *AttachCurrentThread() {
     return env;
 }
 
+void DetachCurrentThread() {
+    globalVM->DetachCurrentThread();
+}
+
 void AddTaskForMainLooper(JNIEnv *env) {
     jclass cls = env->GetObjectClass(globalRef);
     jmethodID mId = env->GetMethodID(cls, "addTask", "()V");

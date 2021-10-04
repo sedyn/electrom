@@ -76,15 +76,9 @@ void NodeBinding::PollEvents() {
 
     int r;
     do {
-        struct epoll_event ev;
+        struct epoll_event ev = {0};
         r = epoll_wait(epoll_, &ev, 1, timeout);
     } while (r == -1 && errno == EINTR);
-}
-
-void NodeBinding::WakeupMainThread() {
-    // Register task to Android UI Thread Looper queue.
-    // Instead of ThreadTaskRunnerHandle in electron.
-    LOG_INFO("WakeUpMainThread")
 }
 
 void NodeBinding::EmbedThreadRunner(void *arg) {
@@ -101,8 +95,12 @@ void NodeBinding::EmbedThreadRunner(void *arg) {
             break;
 
         LOG_INFO("WakeUpMainThread")
+        // Register task to Android UI Thread Looper queue.
+        // Instead of ThreadTaskRunnerHandle in electron.
         AddTaskForMainLooper(env);
     }
+
+    DetachCurrentThread();
 }
 
 void NodeBinding::PrepareMessageLoop() {
@@ -123,6 +121,7 @@ void NodeBinding::RunMessageLoop() {
     UvRunOnce();
 }
 
+// Simple copy of gin_helper::Locker
 class ElectronLocker {
 public:
     explicit ElectronLocker(Isolate* isolate);
@@ -149,8 +148,6 @@ void NodeBinding::UvRunOnce() {
 
     ElectronLocker locker(env->isolate());
 
-    LOG_INFO("LOCKER ENTERED")
-
     HandleScope handle_scope(env->isolate());
 
     Context::Scope context_scope(env->context());
@@ -163,6 +160,7 @@ void NodeBinding::UvRunOnce() {
     env->isolate()->SetMicrotasksPolicy(old_policy);
 
     if (r == 0)
+        // TODO impl base::RunLoop().QuitWhenIdle
         LOG_INFO("QuitWhenIdle")
 
     uv_sem_post(&embed_sem_);

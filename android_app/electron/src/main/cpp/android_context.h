@@ -32,6 +32,8 @@ void RequestThread(AndroidThread func, void* data);
 
 JNIEnv *AttachCurrentThread();
 
+void DetachCurrentThread();
+
 /**
 * This method will be called in Embed Thread.
 */

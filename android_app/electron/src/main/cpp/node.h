@@ -39,8 +39,6 @@ private:
 
     void PollEvents();
 
-    void WakeupMainThread();
-
     bool embed_closed_ = false;
 
     uv_loop_t *uv_loop_;

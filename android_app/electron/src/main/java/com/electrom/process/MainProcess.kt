@@ -43,6 +43,9 @@ internal class MainProcess(
         }
     }
 
+    /**
+     * Run UvEvent in UIThread
+     */
     private fun addTask() {
         handler.post {
             uvRunOnce()
