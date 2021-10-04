@@ -1760,7 +1760,7 @@ class V8_EXPORT ScriptCompiler {
    * cannot be streamed. The user is responsible for running the task on a
    * background thread and deleting it. When ran, the task starts parsing the
    * script, and it will request data from the StreamedSource as needed. When
-   * ScriptStreamingTask::RunMessageLoop exits, all data has been streamed and the script
+   * ScriptStreamingTask::Run exits, all data has been streamed and the script
    * can be compiled (see Compile below).
    *
    * This API allows to start the streaming with as little data as possible, and
