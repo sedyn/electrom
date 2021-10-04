@@ -2,6 +2,20 @@
 ## Architecture
 ![architecture](./assets/architecture1.png)
 
+### startEmbeddedNodeJs
+JNI method for starting Node.js in Android App.
+
+### UvRunOnce
+Execute event in libuv without polling.
+
+### libuv EmbedThread
+Another thread for polling new event from libuv.
+
+### UIThread
+[Android main thread](https://developer.android.com/reference/android/app/Activity?hl=ko#runOnUiThread(java.lang.Runnable))
+
+## Files
+
 ### android_app/app/src/main/assets/electron_app
 - 실제 electron 앱의 자바스크립트 소스코드와 에셋파일들
 
