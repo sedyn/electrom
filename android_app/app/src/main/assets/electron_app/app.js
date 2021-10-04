@@ -31,4 +31,12 @@
 //    window.show()
 //  })
 //})
-console.log('Hello From Main Process!')
+
+function xx() {
+    setTimeout(() => {
+        console.log('Hello From Main Process!')
+        xx()
+    }, 1000)
+}
+
+xx()

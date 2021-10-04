@@ -7,8 +7,13 @@
 class ElectronMainParts {
 public:
     ElectronMainParts();
-    void Initialize();
+
+    void Initialize(const char *main_module_path);
+
     int RunMessageLoop();
+
+    void UvRunOnce();
+
 private:
     std::unique_ptr<NodeBinding> node_binding_;
     std::unique_ptr<JavascriptEnvironment> js_env_;

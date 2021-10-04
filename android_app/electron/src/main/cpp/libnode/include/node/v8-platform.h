@@ -29,7 +29,7 @@ class Task {
 
 /**
  * An IdleTask represents a unit of work to be performed in idle time.
- * The Run method is invoked with an argument that specifies the deadline in
+ * The RunMessageLoop method is invoked with an argument that specifies the deadline in
  * seconds returned by MonotonicallyIncreasingTime().
  * The idle task is expected to complete by this deadline.
  */

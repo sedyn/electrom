@@ -534,7 +534,7 @@ struct OnScopeLeaveImpl {
   }
 };
 
-// Run a function when exiting the current scope. Used like this:
+// RunMessageLoop a function when exiting the current scope. Used like this:
 // auto on_scope_leave = OnScopeLeave([&] {
 //   // ... run some code ...
 // });

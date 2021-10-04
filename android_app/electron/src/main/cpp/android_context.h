@@ -12,6 +12,7 @@ public:
     const char *StartRendererProcess(const char *propertiesJson) const;
 
     void CommandToRendererProcess(const char *command, const char *argument) const;
+
 };
 
 void InitAndroidContext(JNIEnv* env, jobject obj);
@@ -28,5 +29,12 @@ AndroidContext *android();
 typedef void (*AndroidThread)(const AndroidContext*, void* data);
 
 void RequestThread(AndroidThread func, void* data);
+
+JNIEnv *AttachCurrentThread();
+
+/**
+* This method will be called in Embed Thread.
+*/
+void AddTaskForMainLooper(JNIEnv *env);
 
 #endif //ANDROID_APP_ANDROID_CONTEXT_H

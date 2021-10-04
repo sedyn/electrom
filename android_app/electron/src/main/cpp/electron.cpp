@@ -15,15 +15,44 @@
 #include "electron_api_app.h"
 #include "electron_api_browser_window.h"
 
-using node::ArrayBufferAllocator;
 using node::Environment;
 using node::IsolateData;
 using node::MultiIsolatePlatform;
 using namespace v8;
 
-ElectronMainParts *main_parts() {
-    static auto *main_parts = new ElectronMainParts;
-    return main_parts;
+class ElectronHandler {
+public:
+    ElectronHandler();
+
+    void Initialize(const char *main_module_path);
+
+    void RunMessageLoop();
+
+    void UvRunOnce();
+
+private:
+    std::unique_ptr<ElectronMainParts> main_parts_;
+};
+
+ElectronHandler::ElectronHandler() {
+    main_parts_ = std::make_unique<ElectronMainParts>();
+}
+
+void ElectronHandler::Initialize(const char *main_module_path) {
+    main_parts_->Initialize(main_module_path);
+}
+
+void ElectronHandler::RunMessageLoop() {
+    main_parts_->RunMessageLoop();
+}
+
+void ElectronHandler::UvRunOnce() {
+    main_parts_->UvRunOnce();
+}
+
+ElectronHandler *electron() {
+    static auto *electron = new ElectronHandler;
+    return electron;
 }
 
 const char *LOADER =
@@ -157,21 +186,17 @@ Java_com_electrom_process_MainProcess_startMainModule(
 
     const char *basePath = env->GetStringUTFChars(storagePath, 0);
 
-    char fullPath[env->GetStringUTFLength(storagePath) + env->GetStringUTFLength(mainEntryFilePath) + 2];
+    char fullPath[
+            env->GetStringUTFLength(storagePath) + env->GetStringUTFLength(mainEntryFilePath) + 2];
     sprintf(fullPath, "%s/%s", basePath, env->GetStringUTFChars(mainEntryFilePath, 0));
-
-    int argc = 2;
-    char **argv = new char *[argc];
-
-    argv[0] = (char *) "node";
-    argv[1] = fullPath;
 
     if (start_redirecting_stdout_stderr() == -1) {
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
     InitAndroidContext(env, thiz);
-    main_parts()->Initialize();
+    electron()->Initialize(fullPath);
+    electron()->RunMessageLoop();
 //
 //    argv = uv_setup_args(argc, argv);
 //    std::vector<std::string> args(argv, argv + argc);
@@ -196,3 +221,9 @@ Java_com_electrom_process_MainProcess_startMainModule(
     return 0;
 }
 
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_electrom_process_MainProcess_uvRunOnce(JNIEnv *env, jobject thiz) {
+    electron()->UvRunOnce();
+}

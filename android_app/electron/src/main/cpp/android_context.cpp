@@ -29,7 +29,8 @@ void InitAndroidContext(JNIEnv *env, jobject obj) {
 
 void AndroidContext::CommandToRendererProcess(const char *command, const char *argument) const {
     jclass cls = env->GetObjectClass(obj);
-    jmethodID mId = env->GetMethodID(cls, "commandToRendererProcess", "(Ljava/lang/String;Ljava/lang/String;)V");
+    jmethodID mId = env->GetMethodID(cls, "commandToRendererProcess",
+                                     "(Ljava/lang/String;Ljava/lang/String;)V");
 
     jstring j_command = env->NewStringUTF(command);
     if (argument != nullptr) {
@@ -44,7 +45,8 @@ const char *AndroidContext::StartRendererProcess(const char *propertiesJson) con
     jstring properties = env->NewStringUTF(propertiesJson);
 
     jclass cls = env->GetObjectClass(obj);
-    jmethodID mId = env->GetMethodID(cls, "startRendererProcess", "(Ljava/lang/String;)Ljava/lang/String;");
+    jmethodID mId = env->GetMethodID(cls, "startRendererProcess",
+                                     "(Ljava/lang/String;)Ljava/lang/String;");
     auto returnVal = (jstring) env->CallObjectMethod(obj, mId, properties);
 
     const char *rendererId = env->GetStringUTFChars(returnVal, nullptr);
@@ -72,4 +74,21 @@ void internalThread(AndroidThread func, void *data) {
 void RequestThread(AndroidThread func, void *data) {
     // https://stackoverflow.com/questions/42066700/ndk-c-stdthread-abort-crash-on-join
     std::thread(internalThread, func, data).detach();
+}
+
+JNIEnv *AttachCurrentThread() {
+    JNIEnv *env = nullptr;
+    globalVM->AttachCurrentThread(&env, nullptr);
+    if (env == nullptr) {
+        globalVM->DetachCurrentThread();
+        return nullptr;
+    }
+
+    return env;
+}
+
+void AddTaskForMainLooper(JNIEnv *env) {
+    jclass cls = env->GetObjectClass(globalRef);
+    jmethodID mId = env->GetMethodID(cls, "addTask", "()V");
+    env->CallVoidMethod(globalRef, mId);
 }

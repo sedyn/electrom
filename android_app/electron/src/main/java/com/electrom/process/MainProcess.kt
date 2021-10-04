@@ -1,5 +1,7 @@
 package com.electrom.process
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.electrom.ElectronApp
 import com.electrom.extension.ELECTRON_ASSETS_FOLDER
@@ -11,11 +13,15 @@ internal class MainProcess(
     private val mainPath: String
 ) : ElectronProcess() {
 
+    private val handler = Handler(Looper.getMainLooper())
+
     /**
      * Start mobile Node.js for main process in electron.
      * This function starts embedded Node.js (https://nodejs.org/api/embedding.html) environment.
      */
     private external fun startMainModule(arguments: Array<String>): Int
+
+    private external fun uvRunOnce()
 
     private lateinit var peerRendererProcess: RendererProcess
 
@@ -34,6 +40,12 @@ internal class MainProcess(
             "show" -> {
                 peerRendererProcess.show()
             }
+        }
+    }
+
+    private fun addTask() {
+        handler.post {
+            uvRunOnce()
         }
     }
 
