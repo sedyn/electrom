@@ -22,8 +22,6 @@ void ElectronMainParts::Initialize(const char *main_module_path) {
 
     env->options()->unhandled_rejections = "warn";
 
-    // TODO Binding Electron Module
-
     node_binding_->LoadEnvironment(env);
     node_binding_->set_uv_env(env);
 }

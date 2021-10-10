@@ -1,4 +1,4 @@
-#include "node.h"
+#include "node_bindings.h"
 #include "log.h"
 #include "android_context.h"
 #include "libnode/include/node/env-inl.h"
@@ -7,6 +7,16 @@
 #include <vector>
 
 using namespace v8;
+
+#define ELECTRON_BUILTIN_MODULES(V) \
+    V(electron_browser_window) \
+    V(electron_browser_event_emitter)
+
+#define V(modname) void _register_##modname();
+
+ELECTRON_BUILTIN_MODULES(V)
+
+#undef V
 
 NodeBinding::NodeBinding() {
     uv_loop_ = uv_default_loop();
@@ -22,6 +32,10 @@ NodeBinding::NodeBinding() {
 }
 
 void NodeBinding::Initialize(const char *main_module_path) {
+#define V(modname) _register_##modname();
+    ELECTRON_BUILTIN_MODULES(V)
+#undef V
+
     std::vector<std::string> argv = {"node", main_module_path};
     std::vector<std::string> exec_argv;
     std::vector<std::string> errors;
@@ -32,8 +46,12 @@ void NodeBinding::Initialize(const char *main_module_path) {
     }
 }
 
+const char *LOADER2 = "const ee = process._linkedBinding(\"electron_browser_event_emitter\");"
+                      "const publicRequire = require('module').createRequire(process.cwd() + '/'); "
+                      "ee.setEventEmitterPrototype(publicRequire('events').EventEmitter.prototype);";
+
 void NodeBinding::LoadEnvironment(node::Environment *env) {
-    node::LoadEnvironment(env, node::StartExecutionCallback{});
+    node::LoadEnvironment(env, LOADER2);
 }
 
 node::Environment *NodeBinding::CreateEnvironment(
@@ -124,7 +142,8 @@ void NodeBinding::RunMessageLoop() {
 // Simple copy of gin_helper::Locker
 class ElectronLocker {
 public:
-    explicit ElectronLocker(Isolate* isolate);
+    explicit ElectronLocker(Isolate *isolate);
+
     ~ElectronLocker();
 
     static inline bool IsBrowserProcess() { return Locker::IsActive(); }

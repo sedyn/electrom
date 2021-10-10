@@ -84,7 +84,7 @@ void InitializeWithEventEmitter(const FunctionCallbackInfo<Value> &args) {
     Local<Object> eventEmitter = args[1]->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
 
     app()->init(electron, eventEmitter);
-    RegisterBrowserWindow(electron, eventEmitter);
+    // RegisterBrowserWindow(electron, eventEmitter);
 }
 
 

@@ -1,5 +1,5 @@
-#ifndef ANDROID_APP_NODE_H
-#define ANDROID_APP_NODE_H
+#ifndef ANDROID_APP_NODE_BINDINGS_H
+#define ANDROID_APP_NODE_BINDINGS_H
 
 #include "libnode/include/node/uv.h"
 #include "libnode/include/node/node.h"
@@ -55,4 +55,4 @@ private:
     int epoll_;
 };
 
-#endif //ANDROID_APP_NODE_H
+#endif //ANDROID_APP_NODE_BINDINGS_H

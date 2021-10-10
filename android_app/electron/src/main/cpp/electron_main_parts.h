@@ -1,7 +1,7 @@
 #ifndef ANDROID_APP_ELECTRON_MAIN_PARTS_H
 #define ANDROID_APP_ELECTRON_MAIN_PARTS_H
 
-#include "node.h"
+#include "node_bindings.h"
 #include "javascript_environment.h"
 
 class ElectronMainParts {
