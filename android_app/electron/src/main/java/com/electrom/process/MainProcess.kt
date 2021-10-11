@@ -3,14 +3,15 @@ package com.electrom.process
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import com.electrom.ElectronApp
-import com.electrom.extension.ELECTRON_ASSETS_FOLDER
+import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
+import com.electrom.extension.electronInternalScriptFolderPath
+import com.electrom.extension.electronResourceFolderPath
 import com.electrom.extension.toObject
 
 internal class MainProcess(
-    private val electronApp: ElectronApp,
-    private val mainPath: String
+    private val electron: Electron,
+    private val mainStartupScript: String
 ) : ElectronProcess() {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -27,7 +28,7 @@ internal class MainProcess(
 
     private fun startRendererProcess(properties: String): String {
         Log.d(LOG_TAG, "Renderer process started by $processId")
-        peerRendererProcess = electronApp.requestRendererProcess(properties.toObject())
+        peerRendererProcess = electron.requestRendererProcess(properties.toObject())
         return peerRendererProcess.processId
     }
 
@@ -53,12 +54,15 @@ internal class MainProcess(
     }
 
     private fun startEmbeddedNodeJs() {
-        startMainModule(
-            arrayOf(
-                "${electronApp.appData}/$ELECTRON_ASSETS_FOLDER",
-                mainPath
+        electron.activity.run {
+            startMainModule(
+                arrayOf(
+                    "electron/lib/browser/init",
+                    electronResourceFolderPath,
+                    mainStartupScript
+                )
             )
-        )
+        }
     }
 
     fun execute() {

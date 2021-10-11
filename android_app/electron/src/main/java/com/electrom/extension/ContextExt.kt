@@ -7,7 +7,11 @@ import java.io.File
 val Context.appData: String
     get() = this.filesDir.absolutePath
 
-const val ELECTRON_ASSETS_FOLDER = "electron_app"
+val Context.electronResourceFolderPath: String
+    get() = "$appData/$ELECTRON_ASSETS_FOLDER"
+
+val Context.electronInternalScriptFolderPath: String
+    get() = "$appData/$ELECTRON_INTERNAL_SCRIPT_FOLDER"
 
 private fun copyAsset(assetManager: AssetManager, fromAssetPath: String, toPath: String) {
     assetManager.open(fromAssetPath).use { stream ->
@@ -17,19 +21,19 @@ private fun copyAsset(assetManager: AssetManager, fromAssetPath: String, toPath:
     }
 }
 
-fun Context.copyElectronAssetFolder() {
-    val electronAssetsPath = "$appData/$ELECTRON_ASSETS_FOLDER"
-    val electronAssetsReference = File(electronAssetsPath)
+fun Context.copyFolderFromAssetsToApplicationDirectory(assetPath: String, targetPath: String) {
+    val electronAssetsReference = File(targetPath)
     if (electronAssetsReference.exists()) {
         electronAssetsReference.deleteRecursively()
     }
 
     electronAssetsReference.mkdir()
 
-    val assetManager = assets
-
-    val files = assetManager.list(ELECTRON_ASSETS_FOLDER)!!
-    for (file in files) {
-        copyAsset(assetManager, "$ELECTRON_ASSETS_FOLDER/$file", "$electronAssetsPath/$file")
+    assets.list(assetPath)!!.forEach { file ->
+        copyAsset(
+            assets,
+            "$assetPath/$file",
+            "$targetPath/$file"
+        )
     }
 }

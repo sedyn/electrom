@@ -1,5 +1,6 @@
 #include "libnode/include/node/node.h"
 #include "libnode/include/node/uv.h"
+
 #include <jni.h>
 #include <string>
 
@@ -22,9 +23,9 @@ using namespace v8;
 
 class ElectronHandler {
 public:
-    ElectronHandler();
+    explicit ElectronHandler(ElectronModulePaths *electron_module_paths);
 
-    void Initialize(const char *main_module_path);
+    void Initialize();
 
     void RunMessageLoop();
 
@@ -34,12 +35,12 @@ private:
     std::unique_ptr<ElectronMainParts> main_parts_;
 };
 
-ElectronHandler::ElectronHandler() {
-    main_parts_ = std::make_unique<ElectronMainParts>();
+ElectronHandler::ElectronHandler(ElectronModulePaths *electron_module_paths) {
+    main_parts_ = std::make_unique<ElectronMainParts>(electron_module_paths);
 }
 
-void ElectronHandler::Initialize(const char *main_module_path) {
-    main_parts_->Initialize(main_module_path);
+void ElectronHandler::Initialize() {
+    main_parts_->Initialize();
 }
 
 void ElectronHandler::RunMessageLoop() {
@@ -50,10 +51,7 @@ void ElectronHandler::UvRunOnce() {
     main_parts_->UvRunOnce();
 }
 
-ElectronHandler *electron() {
-    static auto *electron = new ElectronHandler;
-    return electron;
-}
+ElectronHandler *electron = nullptr;
 
 const char *LOADER =
         "const electron = globalThis.electron;"
@@ -87,29 +85,46 @@ void InitializeWithEventEmitter(const FunctionCallbackInfo<Value> &args) {
     // RegisterBrowserWindow(electron, eventEmitter);
 }
 
+std::string ConvertJStringToString(JNIEnv *env, jobject obj) {
+    return std::string(env->GetStringUTFChars((jstring) obj, nullptr));
+}
+
+ElectronModulePaths *ParseArguments(JNIEnv *env,
+                                    jobjectArray arguments) {
+    auto *electron_module_paths = new ElectronModulePaths;
+
+    /**
+     * [0] = electron app folder path
+     * [1] = electron internal script folder path
+     * [2] = electron startup script name
+     */
+    electron_module_paths->browserInitScript =
+            ConvertJStringToString(env, env->GetObjectArrayElement(arguments, 0));
+    electron_module_paths->assetsPackage =
+            ConvertJStringToString(env, env->GetObjectArrayElement(arguments, 1));
+    electron_module_paths->mainStartupScript =
+            ConvertJStringToString(env, env->GetObjectArrayElement(arguments, 2));
+
+    return electron_module_paths;
+}
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_electrom_process_MainProcess_startMainModule(
         JNIEnv *env,
         jobject thiz,
         jobjectArray arguments) {
-    auto storagePath = (jstring) env->GetObjectArrayElement(arguments, 0);
-    auto mainEntryFilePath = (jstring) env->GetObjectArrayElement(arguments, 1);
-
-    const char *basePath = env->GetStringUTFChars(storagePath, 0);
-
-    char fullPath[
-            env->GetStringUTFLength(storagePath) + env->GetStringUTFLength(mainEntryFilePath) + 2];
-    sprintf(fullPath, "%s/%s", basePath, env->GetStringUTFChars(mainEntryFilePath, 0));
+    ElectronModulePaths *electron_module_paths = ParseArguments(env, arguments);
 
     if (start_redirecting_stdout_stderr() == -1) {
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
-    InitAndroidContext(env, thiz);
-    electron()->Initialize(fullPath);
-    electron()->RunMessageLoop();
-
+    if (electron == nullptr) {
+        AndroidContext::Initialize(env, thiz);
+        electron = new ElectronHandler(electron_module_paths);
+        electron->Initialize();
+        electron->RunMessageLoop();
+    }
     return 0;
 }
 
@@ -117,5 +132,5 @@ Java_com_electrom_process_MainProcess_startMainModule(
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_electrom_process_MainProcess_uvRunOnce(JNIEnv *env, jobject thiz) {
-    electron()->UvRunOnce();
+    electron->UvRunOnce();
 }

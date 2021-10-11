@@ -6,9 +6,9 @@
 
 class ElectronMainParts {
 public:
-    ElectronMainParts();
+    ElectronMainParts(ElectronModulePaths* electron_module_paths);
 
-    void Initialize(const char *main_module_path);
+    void Initialize();
 
     int RunMessageLoop();
 

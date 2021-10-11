@@ -5,8 +5,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
-import com.electrom.extension.appData
-import com.electrom.extension.copyElectronAssetFolder
+import com.electrom.extension.*
 import com.electrom.ipc.IpcBridge
 import com.electrom.process.ElectronProcess
 import com.electrom.process.MainProcess
@@ -18,9 +17,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class ElectronApp private constructor(
+class Electron private constructor(
     internal val activity: Activity,
-    internal val viewGroup: ViewGroup
+    internal val rendererLayout: ViewGroup
 ) {
 
     companion object {
@@ -29,11 +28,16 @@ class ElectronApp private constructor(
             System.loadLibrary("node")
         }
 
-        fun with(activity: Activity, targetViewGroup: ViewGroup): ElectronApp {
-            val context: Context = activity
-            // TODO: copy assets files only when changed
-            context.copyElectronAssetFolder()
-            return ElectronApp(
+        fun with(activity: Activity, targetViewGroup: ViewGroup): Electron {
+            activity.run {
+                listOf(
+                    Pair(ELECTRON_ASSETS_FOLDER, electronResourceFolderPath),
+                    Pair("$ELECTRON_INTERNAL_SCRIPT_FOLDER/browser", "$electronInternalScriptFolderPath/browser")
+                ).forEach {
+                    copyFolderFromAssetsToApplicationDirectory(it.first, it.second)
+                }
+            }
+            return Electron(
                 activity,
                 targetViewGroup
             )
@@ -58,9 +62,6 @@ class ElectronApp private constructor(
             activity.title = title
         }
     }
-
-    internal val appData: String
-        get() = (activity as Context).appData
 
     internal fun requestRendererProcess(browserWindowProperty: BrowserWindowProperty): RendererProcess {
         if (rendererProcesses.isNotEmpty()) {

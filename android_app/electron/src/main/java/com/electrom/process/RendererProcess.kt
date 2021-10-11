@@ -6,15 +6,14 @@ import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import com.electrom.ElectronApp
+import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
 import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
-import java.util.*
 import java.util.concurrent.CountDownLatch
 
 class RendererProcess(
-    private val electronApp: ElectronApp,
+    private val electron: Electron,
     private val browserWindowProperties: BrowserWindowProperty
 ) : ElectronProcess(), Runnable {
 
@@ -35,7 +34,7 @@ class RendererProcess(
 
     private fun attachWebViewOnStart() {
         awaitMainLooper {
-            webView = ElectronWebView(electronApp).apply {
+            webView = ElectronWebView(electron).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -53,7 +52,7 @@ class RendererProcess(
                     }
                 }
 
-                electronApp.viewGroup.addView(webView)
+                electron.rendererLayout.addView(webView)
             }
         }
         Log.d(LOG_TAG, "after attach")

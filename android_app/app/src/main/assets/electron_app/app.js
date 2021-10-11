@@ -32,11 +32,11 @@
 //  })
 //})
 
+console.log(require)
+
 function xx() {
     setTimeout(() => {
         console.log('Hello From Main Process!')
         xx()
     }, 1000)
 }
-
-xx()
