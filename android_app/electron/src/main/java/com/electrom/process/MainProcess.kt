@@ -5,7 +5,6 @@ import android.os.Looper
 import android.util.Log
 import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
-import com.electrom.extension.electronInternalScriptFolderPath
 import com.electrom.extension.electronResourceFolderPath
 import com.electrom.extension.toObject
 
@@ -57,7 +56,7 @@ internal class MainProcess(
         electron.activity.run {
             startMainModule(
                 arrayOf(
-                    "electron/lib/browser/init",
+                    "electron/js2c/browser_init",
                     electronResourceFolderPath,
                     mainStartupScript
                 )
