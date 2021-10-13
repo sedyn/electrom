@@ -9,13 +9,6 @@ cmake_minimum_required(VERSION 3.10.2)
 
 project("electron")
 
-add_custom_command(
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/../../..
-        OUTPUT electron_native.cpp
-        DEPENDS ../../../lib/electron/js2c/browser_init.js
-        COMMAND "python3" "tools/js2c.py" "lib/electron/js2c/browser_init.js" "--only-js" "--target" "${CMAKE_BINARY_DIR}/electron_native.cpp"
-)
-
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -39,9 +32,8 @@ add_library( # Sets the name of the library.
 
         electron_main_parts.cpp
 
-        electron_native.cpp
-
         event_emitter.cpp
+        event_emitter_mixin.cpp
 
         electron_api_app.cpp
         electron_api_browser_window.cpp

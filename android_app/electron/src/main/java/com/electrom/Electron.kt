@@ -32,6 +32,7 @@ class Electron private constructor(
             activity.run {
                 listOf(
                     Pair(ELECTRON_ASSETS_FOLDER, electronResourceFolderPath),
+                    Pair(ELECTRON_INTERNAL_SCRIPT_FOLDER, electronInternalScriptFolderPath)
                 ).forEach {
                     copyFolderFromAssetsToApplicationDirectory(it.first, it.second)
                 }

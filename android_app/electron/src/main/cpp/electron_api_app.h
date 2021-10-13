@@ -1,14 +1,18 @@
 #ifndef ANDROID_APP_ELECTRON_API_APP_H
 #define ANDROID_APP_ELECTRON_API_APP_H
 
-#include "libnode/include/node/node.h"
+#include "node_includes.h"
+#include "event_emitter_mixin.h"
 
-class ElectronApp {
-private:
-    v8::Local<v8::Object> app;
+class ElectronApp : EventEmitterMixin<ElectronApp> {
 public:
-    void init(v8::Local<v8::Object> electron, v8::Local<v8::Object> eventEmitter);
-    void Emit(const std::string& type, int argc, std::string* argv) const;
+    v8::Local<v8::Object> Create(v8::Isolate* isolate);
+
+    const char* GetTypeName() {
+        return "app";
+    }
+
+    v8::Local<v8::FunctionTemplate> GetObjectTemplate(v8::Isolate* isolate);
 };
 
 ElectronApp* app();

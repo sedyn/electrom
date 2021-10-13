@@ -32,7 +32,7 @@
 //  })
 //})
 
-console.log(require)
+console.log(require('electron'))
 
 function xx() {
     setTimeout(() => {

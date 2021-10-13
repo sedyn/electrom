@@ -10,7 +10,8 @@ using namespace v8;
 
 #define ELECTRON_BUILTIN_MODULES(V) \
     V(electron_browser_window) \
-    V(electron_browser_event_emitter)
+    V(electron_browser_event_emitter) \
+    V(electron_browser_app)
 
 #define V(modname) void _register_##modname();
 
@@ -60,7 +61,7 @@ node::Environment *NodeBinding::CreateEnvironment(
     // args.insert(args.begin() + 1, "electron/js2c/browser_init");
     std::vector<std::string> args = {
             "electron",
-            electron_module_paths_->browserInitScript,
+            electron_module_paths_->browserInitScript + "/" + "browser_init.js",
             electron_module_paths_->assetsPackage + "/" + electron_module_paths_->mainStartupScript
     };
     std::vector<std::string> exec_args;
