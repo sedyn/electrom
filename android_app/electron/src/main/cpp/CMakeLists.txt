@@ -32,13 +32,17 @@ add_library( # Sets the name of the library.
 
         electron_main_parts.cpp
 
+        event_emitter_caller.cpp
         event_emitter.cpp
-        event_emitter_mixin.cpp
 
         electron_api_app.cpp
         electron_api_browser_window.cpp
 
         electron.cpp)
+
+
+target_compile_options(electron PRIVATE -std=c++17)
+
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

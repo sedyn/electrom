@@ -13,6 +13,8 @@ public:
     v8::Local<v8::Context> context() const {
         return v8::Local<v8::Context>::New(isolate_, context_);
     }
+
+    static v8::Isolate* GetIsolate();
 private:
     v8::Isolate* Initialize(uv_loop_t* event_loop);
 

@@ -116,6 +116,11 @@ namespace {
                     v8::Local<v8::Value> unused,
                     v8::Local<v8::Context> context) {
         Isolate *isolate = context->GetIsolate();
+
+        exports->Set(
+            String::NewFromUtf8(isolate, "BrowserWindow"),
+            (Local<Value>) Object::New(isolate)
+        );
     }
 
 }

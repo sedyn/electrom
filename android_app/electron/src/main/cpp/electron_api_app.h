@@ -4,17 +4,12 @@
 #include "node_includes.h"
 #include "event_emitter_mixin.h"
 
-class ElectronApp : EventEmitterMixin<ElectronApp> {
+class App : public EventEmitterMixin<App> {
 public:
-    v8::Local<v8::Object> Create(v8::Isolate* isolate);
-
-    const char* GetTypeName() {
-        return "app";
-    }
-
-    v8::Local<v8::FunctionTemplate> GetObjectTemplate(v8::Isolate* isolate);
+    const char *GetTypeName();
+    v8::Local<v8::ObjectTemplate> GetObjectTemplate(v8::Isolate *isolate);
 };
 
-ElectronApp* app();
+App *app();
 
 #endif //ANDROID_APP_ELECTRON_API_APP_H

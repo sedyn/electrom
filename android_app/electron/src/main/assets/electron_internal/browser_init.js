@@ -7,20 +7,20 @@ process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototyp
 process.argv.splice(1, 1);
 
 const Module = require('module');
+Module.globalPaths.length = 0;
 
 // lib/browser/api/module-lists.ts
 const browserModules = [
     {
         name: 'app', loader: () => {
             const { app } = process._linkedBinding('electron_browser_app');
-
             return app;
         }
     },
     {
         name: 'BrowserWindow', loader: () => {
             const { BrowserWindow } = process._linkedBinding('electron_browser_window');
-            
+
             BrowserWindow.prototype.loadURL = function() {
                 console.log("loadURL!")
             }
@@ -41,7 +41,7 @@ function defineProperties(targetExports, moduleList) {
     const descriptors = {};
     for (const module of moduleList) {
         descriptors[module.name] = {
-            enumerator: !module.private,
+            enumerable: !module.private,
             get: handleESModule(module.loader)
         };
     }
@@ -49,7 +49,8 @@ function defineProperties(targetExports, moduleList) {
 }
 
 // lib/browser/api/exports/electron.ts
-const electronBrowserModules = defineProperties(browserModules)
+const electronExports = {};
+const electronBrowserModules = defineProperties(electronExports, browserModules);
 
 // lib/common/reset-search-paths.ts
 const makeElectronModule = (name) => {
@@ -58,7 +59,7 @@ const makeElectronModule = (name) => {
     electronModule.loaded = true;
     electronModule.filename = name;
     Object.defineProperty(electronModule, 'exports', {
-        get: () => electronBrowserModules
+        get: () => electronExports
     });
     Module._cache[name] = electronModule
 }

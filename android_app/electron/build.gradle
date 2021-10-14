@@ -14,7 +14,7 @@ android {
         consumerProguardFiles "consumer-rules.pro"
         externalNativeBuild {
             cmake {
-                cppFlags ""
+                cppFlags "-std=c++17"
                 arguments "-DANDROID_STL=c++_shared"
             }
         }
