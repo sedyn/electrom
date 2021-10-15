@@ -30,10 +30,13 @@ add_library( # Sets the name of the library.
         node_bindings.cpp
         javascript_environment.cpp
 
-        electron_main_parts.cpp
-
+        # Simple copy of gin
+        object_template_builder.cpp
+        wrappable.cpp
         event_emitter_caller.cpp
         event_emitter.cpp
+
+        electron_main_parts.cpp
 
         electron_api_app.cpp
         electron_api_browser_window.cpp

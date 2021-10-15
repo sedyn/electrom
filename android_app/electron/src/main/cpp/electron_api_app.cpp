@@ -2,18 +2,21 @@
 
 using namespace v8;
 
-App *app() {
-    static auto *electronApp = new App;
-    return electronApp;
+App *App::Get() {
+    static auto *app = new App;
+    return app;
+}
+
+gin::Handle<App> App::Create(v8::Isolate *isolate) {
+    return gin::CreateHandle(isolate, Get());
 }
 
 const char *App::GetTypeName() {
     return "App";
 }
 
-v8::Local<v8::ObjectTemplate> App::GetObjectTemplate(v8::Isolate *isolate) {
-    Local<ObjectTemplate> tmpl = EventEmitterMixin<App>::GetObjectTemplate(isolate);
-    return tmpl;
+gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate *isolate) {
+    return EventEmitterMixin<App>::GetObjectTemplateBuilder(isolate);
 }
 
 namespace {
@@ -22,12 +25,8 @@ namespace {
                     v8::Local<v8::Value> unused,
                     v8::Local<v8::Context> context) {
         Isolate *isolate = context->GetIsolate();
-        Local<ObjectTemplate> tmpl = app()->GetObjectTemplate(isolate);
 
-        exports->Set(
-            String::NewFromUtf8(isolate, "app"),
-            (Local<Value>) tmpl->NewInstance(context).ToLocalChecked()
-        );
+        exports->Set(StringToSymbol(isolate, "app"), App::Create(isolate).ToV8());
     }
 
 }

@@ -4,6 +4,7 @@
 #include "event_emitter.h"
 #include "javascript_environment.h"
 #include "event_emitter_caller.h"
+#include "object_template_builder.h"
 
 template<typename T>
 class EventEmitterMixin {
@@ -23,13 +24,13 @@ public:
 protected:
     EventEmitterMixin() = default;
 
-    v8::Local<v8::ObjectTemplate> GetObjectTemplate(v8::Isolate *isolate) {
+    gin::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate *isolate) {
         // TODO Add cache for constructor like gin::PerIsolateData
         v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(isolate);
         constructor->SetClassName(v8::String::NewFromUtf8(isolate, static_cast<T *>(this)->GetTypeName()));
         constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
 
-        return v8::ObjectTemplate::New(isolate, constructor);
+        return gin::ObjectTemplateBuilder(isolate, static_cast<T*>(this)->GetTypeName(), constructor->InstanceTemplate());
     }
 };
 
