@@ -27,8 +27,15 @@ add_library( # Sets the name of the library.
         helper.cpp
         android_context.cpp
 
-        node.cpp
+        node_bindings.cpp
         javascript_environment.cpp
+
+        # Simple copy of gin in Chromium or gin_helper in Electron
+        object_template_builder.cpp
+        wrappable.cpp
+        event_emitter_caller.cpp
+        event_emitter.cpp
+        trackable_object.cpp
 
         electron_main_parts.cpp
 
@@ -36,6 +43,10 @@ add_library( # Sets the name of the library.
         electron_api_browser_window.cpp
 
         electron.cpp)
+
+
+target_compile_options(electron PRIVATE -std=c++17)
+
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

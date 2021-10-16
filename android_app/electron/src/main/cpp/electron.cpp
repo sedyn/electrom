@@ -1,5 +1,6 @@
 #include "libnode/include/node/node.h"
 #include "libnode/include/node/uv.h"
+
 #include <jni.h>
 #include <string>
 
@@ -22,9 +23,9 @@ using namespace v8;
 
 class ElectronHandler {
 public:
-    ElectronHandler();
+    explicit ElectronHandler(ElectronModulePaths *electron_module_paths);
 
-    void Initialize(const char *main_module_path);
+    void Initialize();
 
     void RunMessageLoop();
 
@@ -34,12 +35,12 @@ private:
     std::unique_ptr<ElectronMainParts> main_parts_;
 };
 
-ElectronHandler::ElectronHandler() {
-    main_parts_ = std::make_unique<ElectronMainParts>();
+ElectronHandler::ElectronHandler(ElectronModulePaths *electron_module_paths) {
+    main_parts_ = std::make_unique<ElectronMainParts>(electron_module_paths);
 }
 
-void ElectronHandler::Initialize(const char *main_module_path) {
-    main_parts_->Initialize(main_module_path);
+void ElectronHandler::Initialize() {
+    main_parts_->Initialize();
 }
 
 void ElectronHandler::RunMessageLoop() {
@@ -50,72 +51,54 @@ void ElectronHandler::UvRunOnce() {
     main_parts_->UvRunOnce();
 }
 
-ElectronHandler *electron() {
-    static auto *electron = new ElectronHandler;
-    return electron;
+ElectronHandler *handler = nullptr;
+
+std::string ConvertJStringToString(JNIEnv *env, jobjectArray arguments, int index) {
+    return std::string(env->GetStringUTFChars((jstring) env->GetObjectArrayElement(arguments, index), nullptr));
 }
 
-const char *LOADER =
-        "const electron = globalThis.electron;"
-        "delete globalThis.electron;" // Environment를 현재는 접근할 수 없어서 이 방식을 선택한다.
-        "const publicRequire = require('module').createRequire(process.cwd() + '/');"
-        "globalThis.initializeWithEventEmitter(electron, publicRequire('events').EventEmitter.prototype);"
-        "delete globalThis.initializeWithEventEmitter;"
-        "const electronRequire = function(modulePath) {"
-        "  if (modulePath === 'electron') { " // intercept electron module require
-        "    return electron;"
-        "  } else {"
-        "    return publicRequire(modulePath);"
-        "  }"
-        "};"
-        "console.log(electron);"
-        "globalThis.require = electronRequire;"
-        "const mainCode = require('fs').readFileSync(process.argv[1]);"
-        "require('vm').runInThisContext(mainCode);"
-        "electron.app.emit('ready');"
-        "console.log('after ready');";
+ElectronModulePaths *ParseArguments(JNIEnv *env,
+                                    jobjectArray arguments) {
+    auto *electron_module_paths = new ElectronModulePaths;
 
-void SetElectronModule(Local<Object> electron) {}
+    /**
+     * [0] = electron app folder path
+     * [1] = electron internal script folder path
+     * [2] = electron startup script name
+     */
+    electron_module_paths->browserInitScript = ConvertJStringToString(env, arguments, 0);
+    electron_module_paths->assetsPackage = ConvertJStringToString(env, arguments, 1);
+    electron_module_paths->mainStartupScript = ConvertJStringToString(env, arguments, 2);
 
-void InitializeWithEventEmitter(const FunctionCallbackInfo<Value> &args) {
-    Isolate *isolate = args.GetIsolate();
-
-    Local<Object> electron = args[0]->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
-    Local<Object> eventEmitter = args[1]->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
-
-    app()->init(electron, eventEmitter);
-    RegisterBrowserWindow(electron, eventEmitter);
+    return electron_module_paths;
 }
-
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_electrom_process_MainProcess_startMainModule(
         JNIEnv *env,
         jobject thiz,
         jobjectArray arguments) {
-    auto storagePath = (jstring) env->GetObjectArrayElement(arguments, 0);
-    auto mainEntryFilePath = (jstring) env->GetObjectArrayElement(arguments, 1);
-
-    const char *basePath = env->GetStringUTFChars(storagePath, 0);
-
-    char fullPath[
-            env->GetStringUTFLength(storagePath) + env->GetStringUTFLength(mainEntryFilePath) + 2];
-    sprintf(fullPath, "%s/%s", basePath, env->GetStringUTFChars(mainEntryFilePath, 0));
+    ElectronModulePaths *electron_module_paths = ParseArguments(env, arguments);
 
     if (start_redirecting_stdout_stderr() == -1) {
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
-    InitAndroidContext(env, thiz);
-    electron()->Initialize(fullPath);
-    electron()->RunMessageLoop();
-
+    if (handler == nullptr) {
+        AndroidContext::Initialize(env, thiz);
+        handler = new ElectronHandler(electron_module_paths);
+        handler->Initialize();
+        handler->RunMessageLoop();
+        App::Get()->EmitReady();
+    }
     return 0;
 }
 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_electrom_process_MainProcess_uvRunOnce(JNIEnv *env, jobject thiz) {
-    electron()->UvRunOnce();
+Java_com_electrom_process_MainProcess_uvRunOnce(
+        JNIEnv *env,
+        jobject thiz) {
+    handler->UvRunOnce();
 }

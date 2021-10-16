@@ -1,16 +1,24 @@
 #ifndef ANDROID_APP_ELECTRON_API_APP_H
 #define ANDROID_APP_ELECTRON_API_APP_H
 
-#include "libnode/include/node/node.h"
+#include "node_includes.h"
 
-class ElectronApp {
-private:
-    v8::Local<v8::Object> app;
+#include "event_emitter_mixin.h"
+#include "wrappable.h"
+#include "handle.h"
+
+class App : public gin_helper::Wrappable<App>,
+            public gin_helper::EventEmitterMixin<App> {
 public:
-    void init(v8::Local<v8::Object> electron, v8::Local<v8::Object> eventEmitter);
-    void Emit(const std::string& type, int argc, std::string* argv) const;
-};
+    static gin::Handle<App> Create(v8::Isolate *isolate);
 
-ElectronApp* app();
+    static App *Get();
+
+    gin_helper::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate *isolate) override;
+
+    const char *GetTypeName() override;
+
+    bool EmitReady();
+};
 
 #endif //ANDROID_APP_ELECTRON_API_APP_H

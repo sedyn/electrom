@@ -16,41 +16,35 @@ AndroidContext *android() {
     return androidContext;
 }
 
-void InitAndroidContext(JNIEnv *env, jobject obj) {
+void AndroidContext::Initialize(JNIEnv *env, jobject obj) {
     if (androidContext != nullptr) {
         return;
     }
 
     androidContext = new AndroidContext;
-    androidContext->env = env;
-    androidContext->obj = obj;
+    androidContext->env_ = env;
+    androidContext->obj_ = obj;
     globalRef = env->NewGlobalRef(obj);
 }
 
-void AndroidContext::CommandToRendererProcess(const char *command, const char *argument) const {
-    jclass cls = env->GetObjectClass(obj);
-    jmethodID mId = env->GetMethodID(cls, "commandToRendererProcess",
-                                     "(Ljava/lang/String;Ljava/lang/String;)V");
-
-    jstring j_command = env->NewStringUTF(command);
+void AndroidContext::CommandToWebContents(const int id, const char *command, const char *argument) const {
+    jclass cls = env_->GetObjectClass(obj_);
+    jmethodID mId = env_->GetMethodID(cls, "commandToWebContents", "(ILjava/lang/String;Ljava/lang/String;)V");
+    jstring j_command = env_->NewStringUTF(command);
     if (argument != nullptr) {
-        jstring j_argument = env->NewStringUTF(argument);
-        env->CallVoidMethod(obj, mId, j_command, j_argument);
+        jstring j_argument = env_->NewStringUTF(argument);
+        env_->CallVoidMethod(obj_, mId, id, j_command, j_argument);
     } else {
-        env->CallVoidMethod(obj, mId, j_command, NULL);
+        env_->CallVoidMethod(obj_, mId, id, j_command, NULL);
     }
 }
 
-const char *AndroidContext::StartRendererProcess(const char *propertiesJson) const {
-    jstring properties = env->NewStringUTF(propertiesJson);
-
-    jclass cls = env->GetObjectClass(obj);
-    jmethodID mId = env->GetMethodID(cls, "startRendererProcess",
-                                     "(Ljava/lang/String;)Ljava/lang/String;");
-    auto returnVal = (jstring) env->CallObjectMethod(obj, mId, properties);
-
-    const char *rendererId = env->GetStringUTFChars(returnVal, nullptr);
-    return rendererId;
+int AndroidContext::CreateWebContents(const char *propertiesJson) const {
+    jstring properties = env_->NewStringUTF(propertiesJson);
+    jclass cls = env_->GetObjectClass(obj_);
+    jmethodID mId = env_->GetMethodID(cls, "createWebContents", "(Ljava/lang/String;)I");
+    jint webContentsId = env_->CallIntMethod(obj_, mId, properties);
+    return webContentsId;
 }
 
 void internalThread(AndroidThread func, void *data) {
@@ -62,8 +56,8 @@ void internalThread(AndroidThread func, void *data) {
     }
 
     auto internalAndroidContext = new AndroidContext;
-    internalAndroidContext->env = env;
-    internalAndroidContext->obj = globalRef;
+//    internalAndroidContext->env = env;
+//    internalAndroidContext->obj = globalRef;
 
     func(internalAndroidContext, data);
     free(internalAndroidContext);

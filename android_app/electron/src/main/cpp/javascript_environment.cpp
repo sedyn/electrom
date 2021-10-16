@@ -41,3 +41,7 @@ v8::Isolate *JavascriptEnvironment::Initialize(uv_loop_t *event_loop) {
 
     return isolate;
 }
+
+v8::Isolate *JavascriptEnvironment::GetIsolate() {
+    return g_isolate;
+}

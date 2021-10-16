@@ -1,15 +1,23 @@
-#ifndef ANDROID_APP_NODE_H
-#define ANDROID_APP_NODE_H
+#ifndef ANDROID_APP_NODE_BINDINGS_H
+#define ANDROID_APP_NODE_BINDINGS_H
 
 #include "libnode/include/node/uv.h"
 #include "libnode/include/node/node.h"
+
+struct ElectronModulePaths {
+    std::string assetsPackage;
+    std::string browserInitScript;
+    std::string mainStartupScript;
+};
+
+typedef struct ElectronModulePaths ElectronModulePaths;
 
 /**
  * https://github.com/electron/electron/blob/main/shell/common/node_bindings.h
  */
 class NodeBinding {
 public:
-    NodeBinding();
+    NodeBinding(ElectronModulePaths* electron_module_paths);
 
     uv_loop_t *uv_loop() const { return uv_loop_; }
 
@@ -18,7 +26,7 @@ public:
 
     node::Environment *uv_env() const { return uv_env_; }
 
-    void Initialize(const char *main_module_path);
+    void Initialize();
 
     void LoadEnvironment(node::Environment *env);
 
@@ -30,8 +38,7 @@ public:
 
     node::Environment *CreateEnvironment(
             v8::Handle<v8::Context> context,
-            node::MultiIsolatePlatform *platform,
-            const char *main_module_path
+            node::MultiIsolatePlatform *platform
     );
 
 private:
@@ -53,6 +60,8 @@ private:
     node::IsolateData *isolate_data_ = nullptr;
 
     int epoll_;
+
+    ElectronModulePaths* electron_module_paths_;
 };
 
-#endif //ANDROID_APP_NODE_H
+#endif //ANDROID_APP_NODE_BINDINGS_H

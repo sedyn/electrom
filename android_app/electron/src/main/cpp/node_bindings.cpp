@@ -1,4 +1,4 @@
-#include "node.h"
+#include "node_bindings.h"
 #include "log.h"
 #include "android_context.h"
 #include "libnode/include/node/env-inl.h"
@@ -8,7 +8,19 @@
 
 using namespace v8;
 
-NodeBinding::NodeBinding() {
+#define ELECTRON_BUILTIN_MODULES(V) \
+    V(electron_browser_window) \
+    V(electron_browser_event_emitter) \
+    V(electron_browser_app)
+
+#define V(modname) void _register_##modname();
+
+ELECTRON_BUILTIN_MODULES(V)
+
+#undef V
+
+NodeBinding::NodeBinding(ElectronModulePaths *electron_module_paths) :
+        electron_module_paths_(electron_module_paths) {
     uv_loop_ = uv_default_loop();
     dummy_uv_handle_ = new uv_async_t;
 
@@ -21,8 +33,12 @@ NodeBinding::NodeBinding() {
     epoll_ctl(epoll_, EPOLL_CTL_ADD, backend_fd, &ev);
 }
 
-void NodeBinding::Initialize(const char *main_module_path) {
-    std::vector<std::string> argv = {"node", main_module_path};
+void NodeBinding::Initialize() {
+#define V(modname) _register_##modname();
+    ELECTRON_BUILTIN_MODULES(V)
+#undef V
+
+    std::vector<std::string> argv = {"electron"};
     std::vector<std::string> exec_argv;
     std::vector<std::string> errors;
 
@@ -38,12 +54,16 @@ void NodeBinding::LoadEnvironment(node::Environment *env) {
 
 node::Environment *NodeBinding::CreateEnvironment(
         v8::Handle<v8::Context> context,
-        node::MultiIsolatePlatform *platform,
-        const char *main_module_path
+        node::MultiIsolatePlatform *platform
 ) {
     isolate_data_ = node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
-    std::vector<std::string> args = {"node", main_module_path};
+    // args.insert(args.begin() + 1, "electron/js2c/browser_init");
+    std::vector<std::string> args = {
+            "electron",
+            electron_module_paths_->browserInitScript + "/" + "browser_init.js",
+            electron_module_paths_->assetsPackage + "/" + electron_module_paths_->mainStartupScript
+    };
     std::vector<std::string> exec_args;
 
     node::Environment *env = node::CreateEnvironment(
@@ -124,7 +144,8 @@ void NodeBinding::RunMessageLoop() {
 // Simple copy of gin_helper::Locker
 class ElectronLocker {
 public:
-    explicit ElectronLocker(Isolate* isolate);
+    explicit ElectronLocker(Isolate *isolate);
+
     ~ElectronLocker();
 
     static inline bool IsBrowserProcess() { return Locker::IsActive(); }

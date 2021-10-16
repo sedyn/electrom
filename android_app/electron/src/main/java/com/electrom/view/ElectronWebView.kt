@@ -2,12 +2,11 @@ package com.electrom.view
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Context
 import android.webkit.*
-import com.electrom.ElectronApp
+import com.electrom.Electron
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ViewConstructor")
-class ElectronWebView(electronApp: ElectronApp) : WebView(electronApp.activity) {
+class ElectronWebView(electron: Electron) : WebView(electron.activity) {
 
     private val electronInterface: ElectronInterface
 
@@ -22,7 +21,7 @@ class ElectronWebView(electronApp: ElectronApp) : WebView(electronApp.activity) 
 
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView, url: String) {
-                    electronApp.setTitle(view.title ?: "<electron>")
+                    electron.setTitle(view.title ?: "<electron>")
                 }
             }
             webChromeClient = object : WebChromeClient() {
