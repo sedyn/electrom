@@ -34,7 +34,7 @@ internal class MainProcess(
     private fun commandToWebContents(webContentsId: Int, command: String, arguments: String?) {
         Log.d(LOG_TAG, "CALL -> $command(${arguments ?: ""})")
         when (command) {
-            "loadURL" -> {
+            "LoadURL" -> {
                 webContents.loadUrl(arguments!!)
             }
             "show" -> {

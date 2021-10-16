@@ -51,7 +51,7 @@ namespace gin_helper {
     }
 
     void WrappableBase::InitWith(v8::Isolate *isolate, v8::Local<v8::Object> wrapper) {
-        // wrapper->SetAlignedPointerInInternalField(0, this);
+        wrapper->SetAlignedPointerInInternalField(0, this);
         wrapper_.Reset(isolate, wrapper);
         wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kInternalFields);
     }

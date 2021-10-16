@@ -21,4 +21,11 @@ private:
     int web_contents_id_;
 };
 
+template<>
+struct gin::Converter<BrowserWindow*> {
+    static bool FromV8(v8::Isolate *isolate,
+                       v8::Local<v8::Value> val,
+                       BrowserWindow **out);
+};
+
 #endif //ANDROID_APP_ELECTRON_API_BROWSER_WINDOW_H

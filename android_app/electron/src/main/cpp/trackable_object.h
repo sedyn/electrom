@@ -73,8 +73,9 @@ namespace gin_helper {
             weak_map_->Set(isolate, weak_map_id_, wrapper);
         }
 
-    private:
         int weak_map_id_ = 0;
+
+    private:
 
         static int next_id_;
         static electron::KeyWeakMap<int> *weak_map_;

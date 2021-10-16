@@ -27,14 +27,9 @@ void AndroidContext::Initialize(JNIEnv *env, jobject obj) {
     globalRef = env->NewGlobalRef(obj);
 }
 
-jmethodID AndroidContext::GetMethod(const char *name, const char *sig) const {
-    jclass cls = env_->GetObjectClass(obj_);
-    jmethodID mId = env_->GetMethodID(cls, name, sig);
-    return mId;
-}
-
 void AndroidContext::CommandToWebContents(const int id, const char *command, const char *argument) const {
-    jmethodID mId = GetMethod("commandToWebContents", "(ILjava/lang/String;Ljava/lang/String;)V");
+    jclass cls = env_->GetObjectClass(obj_);
+    jmethodID mId = env_->GetMethodID(cls, "commandToWebContents", "(ILjava/lang/String;Ljava/lang/String;)V");
     jstring j_command = env_->NewStringUTF(command);
     if (argument != nullptr) {
         jstring j_argument = env_->NewStringUTF(argument);

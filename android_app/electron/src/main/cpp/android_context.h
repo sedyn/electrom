@@ -16,8 +16,6 @@ public:
 private:
     JNIEnv *env_;
     jobject obj_;
-
-    jmethodID GetMethod(const char *name, const char *sig) const;
 };
 
 /**

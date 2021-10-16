@@ -34,41 +34,34 @@ internal class WebContents(
     }
 
     private fun attachWebViewOnStart() {
-        handler.post {
-            webView = ElectronWebView(electron).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
+        webView = ElectronWebView(electron).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        browserWindowProperties.run {
+            backgroundColor?.also {
+                webView.setBackgroundColor(Color.parseColor(it))
             }
 
-            browserWindowProperties.run {
-                backgroundColor?.also {
-                    webView.setBackgroundColor(Color.parseColor(it))
+            show?.also {
+                if (!show) {
+                    webView.visibility = View.INVISIBLE
                 }
-
-                show?.also {
-                    if (!show) {
-                        webView.visibility = View.INVISIBLE
-                    }
-                }
-
-                electron.rendererLayout.addView(webView)
-                Log.d(LOG_TAG, "after attach")
             }
+
+            electron.rendererLayout.addView(webView)
+            Log.d(LOG_TAG, "after attach")
         }
     }
 
     internal fun loadUrl(url: String) {
-        handler.post {
-            webView.loadUrl(url)
-        }
-
+        webView.loadUrl(url)
     }
 
     internal fun show() {
-        handler.post {
-            webView.visibility = View.VISIBLE
-        }
+        webView.visibility = View.VISIBLE
     }
 }

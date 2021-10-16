@@ -11,19 +11,20 @@ app.once('ready', () => {
     // Set the initial height to 500px
     height: 500,
     // Don't show the window until it ready, this prevents any white flickering
-    show: false,
+    show: true,
     // Don't allow the window to be resized.
-    resizable: false
+    resizable: false,
+    backgroundColor: '#00ff00'
   })
 
   console.log(window.id);
 
   // Load a URL in the window to the local index.html path
-//  window.loadURL(url.format({
-//    pathname: path.join(__dirname, 'index.html'),
-//    protocol: 'file:',
-//    slashes: true
-//  }))
+  window.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
 //
 //  // Show window when page is ready
 //  window.once('ready-to-show', () => {

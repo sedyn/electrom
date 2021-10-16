@@ -11,25 +11,37 @@
 
 using namespace v8;
 
-template<>
-struct gin::Converter<BrowserWindow> {
-    static bool FromV8(v8::Isolate *isolate,
-                       v8::Local<v8::Value> val,
-                       BrowserWindow *out) {
-        return true;
+// shell/common/gin_helper/wrappable.cc:internal:FromV8Impl
+bool gin::Converter<BrowserWindow *>::FromV8(v8::Isolate *isolate,
+                                             v8::Local<v8::Value> val,
+                                             BrowserWindow **out) {
+    if (!val->IsObject()) {
+        *out = nullptr;
+        return false;
     }
-};
+
+    Local<Object> obj = val.As<Object>();
+    if (obj->InternalFieldCount() != 1) {
+        *out = nullptr;
+        return false;
+    }
+
+    *out = static_cast<BrowserWindow *>(obj->GetAlignedPointerFromInternalField(0));
+    return true;
+}
 
 BrowserWindow::BrowserWindow(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
+
     gin_helper::TrackableObject<BrowserWindow>::InitWith(isolate, info.Holder());
 
     Local<Object> properties = info[0]->ToObject(isolate);
 
-    int id = android()->CreateWebContents(stringify(properties).c_str());
-    web_contents_id_ = id;
+    android()->CreateWebContents(stringify(properties).c_str());
+    web_contents_id_ = weak_map_id_;
 
-    info.Holder()->Set(helper::StringToSymbol(isolate, "id"), Int32::New(isolate, web_contents_id_));
+    info.Holder()->Set(helper::StringToSymbol(isolate, "id"),
+                       Int32::New(isolate, web_contents_id_));
 }
 
 void BrowserWindow::LoadURL(const std::string &url) {
@@ -44,10 +56,13 @@ const char *BrowserWindow::GetTypeName() {
     return "BrowserWindow";
 }
 
-void BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> prototype) {
+void
+BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> prototype) {
     prototype->SetClassName(helper::StringToSymbol(isolate, "BrowserWindow"));
     NODE_SET_PROTOTYPE_METHOD(prototype, "loadURL", [](const FunctionCallbackInfo<Value> &info) {
-        auto self = convertData<BrowserWindow>(info);
+        Isolate *isolate = info.GetIsolate();
+        int id = info.Holder()->Get(helper::StringToSymbol(isolate, "id")).As<Int32>()->Value();
+        BrowserWindow *self = FromWeakMapID(isolate, id);
 
         if (!info[0]->IsString()) {
             return;
@@ -69,6 +84,7 @@ namespace {
         Isolate *isolate = context->GetIsolate();
 
         Local<FunctionTemplate> tmpl = FunctionTemplate::New(isolate, BrowserWindowConstructor);
+        tmpl->InstanceTemplate()->SetInternalFieldCount(1);
         BrowserWindow::BuildPrototype(isolate, tmpl);
 
         exports->Set(
