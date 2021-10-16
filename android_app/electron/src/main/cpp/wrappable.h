@@ -3,7 +3,7 @@
 
 #include "object_template_builder.h"
 
-namespace gin {
+namespace gin_helper {
 
     class WrappableBase {
     protected:
@@ -16,6 +16,8 @@ namespace gin {
         virtual const char *GetTypeName();
 
         v8::MaybeLocal<v8::Object> GetWrapperImpl(v8::Isolate *isolate);
+
+        virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
     private:
         static void FirstWeakCallback(const v8::WeakCallbackInfo<WrappableBase> &data);

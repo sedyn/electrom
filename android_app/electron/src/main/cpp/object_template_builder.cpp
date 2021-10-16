@@ -1,6 +1,6 @@
 #include "object_template_builder.h"
 
-namespace gin {
+namespace gin_helper {
     ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate *isolate, const char *type_name)
             : ObjectTemplateBuilder::ObjectTemplateBuilder(isolate, type_name, v8::ObjectTemplate::New(isolate)) {}
 
@@ -16,7 +16,7 @@ namespace gin {
     }
 
     ObjectTemplateBuilder &ObjectTemplateBuilder::SetImpl(const char *name, v8::Local<v8::Data> val) {
-        template_->Set(StringToSymbol(isolate_, name), val);
+        template_->Set(helper::StringToSymbol(isolate_, name), val);
         return *this;
     }
 }

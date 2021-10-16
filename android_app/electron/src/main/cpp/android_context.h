@@ -7,15 +7,17 @@
 
 class AndroidContext {
 public:
-    const char *StartRendererProcess(const char *propertiesJson) const;
+    int CreateWebContents(const char *propertiesJson) const;
 
-    void CommandToRendererProcess(const char *command, const char *argument) const;
+    void CommandToWebContents(const int id, const char *command, const char *argument) const;
 
     static void Initialize(JNIEnv *env, jobject obj);
 
 private:
     JNIEnv *env_;
     jobject obj_;
+
+    jmethodID GetMethod(const char *name, const char *sig) const;
 };
 
 /**
@@ -27,9 +29,9 @@ AndroidContext *android();
 /**
  * AndroidContext* provides env of attached thread instead of MainProcess thread
  */
-typedef void (*AndroidThread)(const AndroidContext*, void* data);
+typedef void (*AndroidThread)(const AndroidContext *, void *data);
 
-void RequestThread(AndroidThread func, void* data);
+void RequestThread(AndroidThread func, void *data);
 
 JNIEnv *AttachCurrentThread();
 

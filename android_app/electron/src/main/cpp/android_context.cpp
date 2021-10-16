@@ -27,30 +27,29 @@ void AndroidContext::Initialize(JNIEnv *env, jobject obj) {
     globalRef = env->NewGlobalRef(obj);
 }
 
-void AndroidContext::CommandToRendererProcess(const char *command, const char *argument) const {
+jmethodID AndroidContext::GetMethod(const char *name, const char *sig) const {
     jclass cls = env_->GetObjectClass(obj_);
-    jmethodID mId = env_->GetMethodID(cls, "commandToRendererProcess",
-                                     "(Ljava/lang/String;Ljava/lang/String;)V");
+    jmethodID mId = env_->GetMethodID(cls, name, sig);
+    return mId;
+}
 
+void AndroidContext::CommandToWebContents(const int id, const char *command, const char *argument) const {
+    jmethodID mId = GetMethod("commandToWebContents", "(ILjava/lang/String;Ljava/lang/String;)V");
     jstring j_command = env_->NewStringUTF(command);
     if (argument != nullptr) {
         jstring j_argument = env_->NewStringUTF(argument);
-        env_->CallVoidMethod(obj_, mId, j_command, j_argument);
+        env_->CallVoidMethod(obj_, mId, id, j_command, j_argument);
     } else {
-        env_->CallVoidMethod(obj_, mId, j_command, NULL);
+        env_->CallVoidMethod(obj_, mId, id, j_command, NULL);
     }
 }
 
-const char *AndroidContext::StartRendererProcess(const char *propertiesJson) const {
+int AndroidContext::CreateWebContents(const char *propertiesJson) const {
     jstring properties = env_->NewStringUTF(propertiesJson);
-
     jclass cls = env_->GetObjectClass(obj_);
-    jmethodID mId = env_->GetMethodID(cls, "startRendererProcess",
-                                     "(Ljava/lang/String;)Ljava/lang/String;");
-    auto returnVal = (jstring) env_->CallObjectMethod(obj_, mId, properties);
-
-    const char *rendererId = env_->GetStringUTFChars(returnVal, nullptr);
-    return rendererId;
+    jmethodID mId = env_->GetMethodID(cls, "createWebContents", "(Ljava/lang/String;)I");
+    jint webContentsId = env_->CallIntMethod(obj_, mId, properties);
+    return webContentsId;
 }
 
 void internalThread(AndroidThread func, void *data) {

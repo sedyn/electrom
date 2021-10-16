@@ -20,11 +20,6 @@ const browserModules = [
     {
         name: 'BrowserWindow', loader: () => {
             const { BrowserWindow } = process._linkedBinding('electron_browser_window');
-
-            BrowserWindow.prototype.loadURL = function() {
-                console.log("loadURL!")
-            }
-
             return BrowserWindow;
         }
     }
@@ -74,6 +69,8 @@ Module._resolveFilename = function(request, parent, isMain, options) {
         return originalResolveFilename(request, parent, isMain, options);
     }
 }
+
+console.log('READY')
 
 // lib/browser/init.ts
 Module._load(process.argv[1], Module, true)

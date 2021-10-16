@@ -15,8 +15,12 @@ const char *App::GetTypeName() {
     return "App";
 }
 
-gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate *isolate) {
+gin_helper::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate *isolate) {
     return EventEmitterMixin<App>::GetObjectTemplateBuilder(isolate);
+}
+
+bool App::EmitReady() {
+    return Emit("ready");
 }
 
 namespace {
@@ -26,7 +30,7 @@ namespace {
                     v8::Local<v8::Context> context) {
         Isolate *isolate = context->GetIsolate();
 
-        exports->Set(StringToSymbol(isolate, "app"), App::Create(isolate).ToV8());
+        exports->Set(helper::StringToSymbol(isolate, "app"), App::Create(isolate).ToV8());
     }
 
 }

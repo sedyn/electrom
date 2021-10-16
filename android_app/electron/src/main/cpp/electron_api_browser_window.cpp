@@ -2,6 +2,8 @@
 #include "android_context.h"
 #include "helper.h"
 #include "node_includes.h"
+#include "function_template.h"
+#include "converter.h"
 
 #include "libnode/include/node/uv.h"
 
@@ -9,117 +11,69 @@
 
 using namespace v8;
 
-void BrowserWindowConstructor(const FunctionCallbackInfo<Value> &args) {
-    Isolate *isolate = args.GetIsolate();
-    Local<Object> properties = args[0]->ToObject(isolate);
-
-    Local<Object> browserWindow = args.Holder();
-    const char *processId = android()->StartRendererProcess(stringify(properties).c_str());
-
-    browserWindow->Set(String::NewFromUtf8(isolate, "id"), String::NewFromUtf8(isolate, processId));
-}
-
-struct Item {
-    std::string url;
-    Persistent<Promise::Resolver> *resolver;
-    Persistent<Object> *holder;
+template<>
+struct gin::Converter<BrowserWindow> {
+    static bool FromV8(v8::Isolate *isolate,
+                       v8::Local<v8::Value> val,
+                       BrowserWindow *out) {
+        return true;
+    }
 };
 
-void callbackLoadURL(const AndroidContext *ctx, void *data) {
-    auto msg = [](uv_async_t *handle) {
-        auto data = (Item *) handle->data;
+BrowserWindow::BrowserWindow(const FunctionCallbackInfo<Value> &info) {
+    Isolate *isolate = info.GetIsolate();
+    gin_helper::TrackableObject<BrowserWindow>::InitWith(isolate, info.Holder());
 
-        Isolate *isolate = Isolate::GetCurrent();
-        HandleScope handle_scope(isolate);
-        Local<Context> context = isolate->GetCurrentContext();
+    Local<Object> properties = info[0]->ToObject(isolate);
 
-        Local<Promise::Resolver> resolver = data->resolver->Get(isolate);
-        Local<Object> holder = data->holder->Get(isolate);
+    int id = android()->CreateWebContents(stringify(properties).c_str());
+    web_contents_id_ = id;
 
-        resolver->Resolve(context, String::NewFromUtf8(isolate, "test")).Check();
-
-        Local<Value> argv[] = {
-                (Local<Value>) String::NewFromUtf8(isolate, "ready-to-show"),
-        };
-
-        holder->Get(String::NewFromUtf8(isolate, "emit")).As<Function>()->Call(context, holder, 1,
-                                                                               argv).ToLocalChecked();
-        delete data->resolver;
-        delete data->holder;
-        free(data);
-        uv_close((uv_handle_t *) handle, [](uv_handle_t *handle) {
-            delete handle;
-        });
-    };
-
-    auto async = new uv_async_t();
-    uv_loop_t *loop = uv_default_loop();
-    uv_async_init(loop, async, msg);
-
-    async->data = data;
-
-    uv_async_send(async);
-
-    ctx->CommandToRendererProcess("loadURL", ((Item *) data)->url.c_str());
+    info.Holder()->Set(helper::StringToSymbol(isolate, "id"), Int32::New(isolate, web_contents_id_));
 }
 
-void loadURL(const FunctionCallbackInfo<Value> &args) {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
-
-    Local<String> url = args[0]->ToString(isolate);
-
-    auto resolver = Promise::Resolver::New(context).ToLocalChecked();
-
-    auto data = new Item{
-            std::string(*String::Utf8Value(isolate, url)),
-            new Persistent<Promise::Resolver>(isolate, resolver),
-            new Persistent<Object>(isolate, args.Holder())
-    };
-
-    RequestThread(callbackLoadURL, data);
-
-    args.GetReturnValue().Set(resolver->GetPromise());
+void BrowserWindow::LoadURL(const std::string &url) {
+    android()->CommandToWebContents(web_contents_id_, __func__, url.c_str());
 }
 
-void show(const FunctionCallbackInfo<Value> &args) {
-    Isolate *isolate = args.GetIsolate();
-    android()->CommandToRendererProcess(__func__, nullptr);
+gin_helper::ObjectTemplateBuilder BrowserWindow::GetObjectTemplateBuilder(v8::Isolate *isolate) {
+    return EventEmitterMixin::GetObjectTemplateBuilder(isolate);
 }
 
-void RegisterBrowserWindow(Local<Object> electron, Local<Object> eventEmitter) {
-    Isolate *isolate = electron->GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+const char *BrowserWindow::GetTypeName() {
+    return "BrowserWindow";
+}
 
-    Local<String> browserWindowName = String::NewFromUtf8(isolate, "BrowserWindow");
+void BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> prototype) {
+    prototype->SetClassName(helper::StringToSymbol(isolate, "BrowserWindow"));
+    NODE_SET_PROTOTYPE_METHOD(prototype, "loadURL", [](const FunctionCallbackInfo<Value> &info) {
+        auto self = convertData<BrowserWindow>(info);
 
-    Local<FunctionTemplate> BrowserWindowTemplate = FunctionTemplate::New(isolate,
-                                                                          &BrowserWindowConstructor);
-    BrowserWindowTemplate->SetClassName(browserWindowName);
-    NODE_SET_PROTOTYPE_METHOD(BrowserWindowTemplate, "loadURL", &loadURL);
-    NODE_SET_PROTOTYPE_METHOD(BrowserWindowTemplate, "show", &show);
+        if (!info[0]->IsString()) {
+            return;
+        }
 
-    Local<Function> BrowserWindow = BrowserWindowTemplate->GetFunction(context).ToLocalChecked();
-    BrowserWindow->SetName(browserWindowName);
-
-    // event_emitter_mixin.cc 참고
-    Local<Value> BrowserWindowPrototype = BrowserWindow->Get(context, String::NewFromUtf8(isolate,
-                                                                                          "prototype")).ToLocalChecked();
-    BrowserWindowPrototype.As<Object>()->SetPrototype(context, eventEmitter).Check();
-
-    electron->Set(context, browserWindowName, BrowserWindow).Check();
+        self->LoadURL(helper::V8ToString(info.GetIsolate(), info[0]));
+    });
 }
 
 namespace {
+
+    void BrowserWindowConstructor(const FunctionCallbackInfo<Value> &info) {
+        new BrowserWindow(info);
+    }
 
     void Initialize(v8::Local<v8::Object> exports,
                     v8::Local<v8::Value> unused,
                     v8::Local<v8::Context> context) {
         Isolate *isolate = context->GetIsolate();
 
+        Local<FunctionTemplate> tmpl = FunctionTemplate::New(isolate, BrowserWindowConstructor);
+        BrowserWindow::BuildPrototype(isolate, tmpl);
+
         exports->Set(
-            String::NewFromUtf8(isolate, "BrowserWindow"),
-            (Local<Value>) Object::New(isolate)
+                String::NewFromUtf8(isolate, "BrowserWindow"),
+                tmpl->GetFunction(context).ToLocalChecked()
         );
     }
 

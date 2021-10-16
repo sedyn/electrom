@@ -30,11 +30,12 @@ add_library( # Sets the name of the library.
         node_bindings.cpp
         javascript_environment.cpp
 
-        # Simple copy of gin
+        # Simple copy of gin in Chromium or gin_helper in Electron
         object_template_builder.cpp
         wrappable.cpp
         event_emitter_caller.cpp
         event_emitter.cpp
+        trackable_object.cpp
 
         electron_main_parts.cpp
 

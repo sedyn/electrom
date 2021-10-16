@@ -24,22 +24,21 @@ internal class MainProcess(
 
     private external fun uvRunOnce()
 
-    private lateinit var peerRendererProcess: RendererProcess
+    private lateinit var webContents: WebContents
 
-    private fun startRendererProcess(properties: String): String {
-        Log.d(LOG_TAG, "Renderer process started by $processId")
-        peerRendererProcess = electron.requestRendererProcess(properties.toObject())
-        return peerRendererProcess.processId
+    private fun createWebContents(properties: String): Int {
+        webContents = electron.requestRendererProcess(properties.toObject())
+        return webContents.id
     }
 
-    private fun commandToRendererProcess(command: String, arguments: String?) {
+    private fun commandToWebContents(webContentsId: Int, command: String, arguments: String?) {
         Log.d(LOG_TAG, "CALL -> $command(${arguments ?: ""})")
         when (command) {
             "loadURL" -> {
-                peerRendererProcess.loadUrl(arguments!!)
+                webContents.loadUrl(arguments!!)
             }
             "show" -> {
-                peerRendererProcess.show()
+                webContents.show()
             }
         }
     }

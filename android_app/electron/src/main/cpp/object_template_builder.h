@@ -3,7 +3,7 @@
 
 #include "node_includes.h"
 
-namespace gin {
+namespace gin_helper {
     class ObjectTemplateBuilder {
     public:
         ObjectTemplateBuilder(v8::Isolate *isolate, const char *type_name);

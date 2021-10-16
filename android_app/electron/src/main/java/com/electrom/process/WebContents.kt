@@ -10,12 +10,22 @@ import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
 import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 
-class RendererProcess(
+internal class WebContents(
     private val electron: Electron,
     private val browserWindowProperties: BrowserWindowProperty
-) : ElectronProcess(), Runnable {
+) {
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    companion object {
+
+        private val webContentsIdTracker = AtomicInteger(0);
+
+    }
+
+    val id = webContentsIdTracker.getAndIncrement()
 
     private lateinit var webView: ElectronWebView
 
@@ -23,17 +33,8 @@ class RendererProcess(
         attachWebViewOnStart()
     }
 
-    private inline fun awaitMainLooper(crossinline block: () -> Unit) {
-        val wg = CountDownLatch(1)
-        Handler(Looper.getMainLooper()).post {
-            block()
-            wg.countDown()
-        }
-        wg.await()
-    }
-
     private fun attachWebViewOnStart() {
-        awaitMainLooper {
+        handler.post {
             webView = ElectronWebView(electron).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -53,24 +54,21 @@ class RendererProcess(
                 }
 
                 electron.rendererLayout.addView(webView)
+                Log.d(LOG_TAG, "after attach")
             }
         }
-        Log.d(LOG_TAG, "after attach")
     }
 
     internal fun loadUrl(url: String) {
-        awaitMainLooper {
+        handler.post {
             webView.loadUrl(url)
         }
+
     }
 
     internal fun show() {
-        awaitMainLooper {
+        handler.post {
             webView.visibility = View.VISIBLE
         }
-    }
-
-    override fun run() {
-        // TODO Add Looper for IPC?
     }
 }

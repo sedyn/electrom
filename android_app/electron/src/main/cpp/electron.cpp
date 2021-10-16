@@ -51,7 +51,7 @@ void ElectronHandler::UvRunOnce() {
     main_parts_->UvRunOnce();
 }
 
-ElectronHandler *electron = nullptr;
+ElectronHandler *handler = nullptr;
 
 std::string ConvertJStringToString(JNIEnv *env, jobjectArray arguments, int index) {
     return std::string(env->GetStringUTFChars((jstring) env->GetObjectArrayElement(arguments, index), nullptr));
@@ -75,20 +75,21 @@ ElectronModulePaths *ParseArguments(JNIEnv *env,
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_electrom_process_MainProcess_startMainModule(
-    JNIEnv *env,
-    jobject thiz,
-    jobjectArray arguments) {
+        JNIEnv *env,
+        jobject thiz,
+        jobjectArray arguments) {
     ElectronModulePaths *electron_module_paths = ParseArguments(env, arguments);
 
     if (start_redirecting_stdout_stderr() == -1) {
         log(ANDROID_LOG_ERROR, "Couldn't start redirecting stdout and stderr to logcat.");
     }
 
-    if (electron == nullptr) {
+    if (handler == nullptr) {
         AndroidContext::Initialize(env, thiz);
-        electron = new ElectronHandler(electron_module_paths);
-        electron->Initialize();
-        electron->RunMessageLoop();
+        handler = new ElectronHandler(electron_module_paths);
+        handler->Initialize();
+        handler->RunMessageLoop();
+        App::Get()->EmitReady();
     }
     return 0;
 }
@@ -96,6 +97,8 @@ Java_com_electrom_process_MainProcess_startMainModule(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_electrom_process_MainProcess_uvRunOnce(JNIEnv *env, jobject thiz) {
-    electron->UvRunOnce();
+Java_com_electrom_process_MainProcess_uvRunOnce(
+        JNIEnv *env,
+        jobject thiz) {
+    handler->UvRunOnce();
 }

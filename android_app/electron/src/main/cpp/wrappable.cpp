@@ -1,7 +1,6 @@
 #include "wrappable.h"
 
-namespace gin {
-
+namespace gin_helper {
     WrappableBase::WrappableBase() = default;
 
     WrappableBase::~WrappableBase() {
@@ -16,7 +15,6 @@ namespace gin {
         return nullptr;
     }
 
-
     void WrappableBase::FirstWeakCallback(const v8::WeakCallbackInfo<WrappableBase> &data) {
         WrappableBase *wrappable = data.GetParameter();
         wrappable->dead_ = true;
@@ -29,7 +27,7 @@ namespace gin {
         delete wrappable;
     }
 
-    v8::MaybeLocal<v8::Object> gin::WrappableBase::GetWrapperImpl(v8::Isolate *isolate) {
+    v8::MaybeLocal<v8::Object> gin_helper::WrappableBase::GetWrapperImpl(v8::Isolate *isolate) {
         if (!wrapper_.IsEmpty()) {
             return v8::MaybeLocal<v8::Object>(
                     v8::Local<v8::Object>::New(isolate, wrapper_));
@@ -50,5 +48,11 @@ namespace gin {
         wrapper_.Reset(isolate, wrapper);
         wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
         return v8::MaybeLocal<v8::Object>(wrapper);
+    }
+
+    void WrappableBase::InitWith(v8::Isolate *isolate, v8::Local<v8::Object> wrapper) {
+        // wrapper->SetAlignedPointerInInternalField(0, this);
+        wrapper_.Reset(isolate, wrapper);
+        wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kInternalFields);
     }
 }
