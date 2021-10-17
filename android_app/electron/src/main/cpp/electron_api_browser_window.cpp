@@ -38,18 +38,18 @@ BrowserWindow::BrowserWindow(const FunctionCallbackInfo<Value> &info) {
 
     Local<Object> properties = info[0]->ToObject(isolate);
 
-    android()->CreateWebContents(stringify(properties).c_str());
-    web_contents_id_ = weak_map_id_;
+    android()->CreateWebContents(weak_map_id_, stringify(properties).c_str());
 
     holder->SetAccessorProperty(
             helper::StringToSymbol(isolate, "id"),
-            Function::New(isolate->GetCurrentContext(), [](const FunctionCallbackInfo<Value> &info) {
-                Isolate *innerIsolate = info.GetIsolate();
-                Local<Object> innerHolder = info.Holder();
-                BrowserWindow *browserWindow = nullptr;
-                gin::ConvertFromV8(innerIsolate, innerHolder, &browserWindow);
-                info.GetReturnValue().Set(browserWindow->weak_map_id_);
-            }).ToLocalChecked()
+            Function::New(isolate->GetCurrentContext(),
+                          [](const FunctionCallbackInfo<Value> &info) {
+                              Isolate *innerIsolate = info.GetIsolate();
+                              Local<Object> innerHolder = info.Holder();
+                              BrowserWindow *browserWindow = nullptr;
+                              gin::ConvertFromV8(innerIsolate, innerHolder, &browserWindow);
+                              info.GetReturnValue().Set(browserWindow->weak_map_id_);
+                          }).ToLocalChecked()
     );
 }
 
@@ -58,15 +58,15 @@ const char *BrowserWindow::GetTypeName() {
 }
 
 void BrowserWindow::LoadURL(const std::string &url) {
-    android()->CommandToWebContents(web_contents_id_, __func__, url.c_str());
-    Emit("ready-to-show");
+    android()->CommandToWebContents(weak_map_id_, __func__, url.c_str());
 }
 
 void BrowserWindow::Show() {
-    android()->CommandToWebContents(web_contents_id_, __func__, nullptr);
+    android()->CommandToWebContents(weak_map_id_, __func__, nullptr);
 }
 
-void BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> prototype) {
+void
+BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> prototype) {
     prototype->SetClassName(helper::StringToSymbol(isolate, "BrowserWindow"));
     prototype->Inherit(gin_helper::internal::GetEventEmitterTemplate(isolate));
 

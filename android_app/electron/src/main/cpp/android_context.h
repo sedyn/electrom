@@ -7,7 +7,7 @@
 
 class AndroidContext {
 public:
-    int CreateWebContents(const char *propertiesJson) const;
+    int CreateWebContents(int id, const char *propertiesJson) const;
 
     void CommandToWebContents(const int id, const char *command, const char *argument) const;
 
@@ -15,7 +15,6 @@ public:
 
 private:
     JNIEnv *env_;
-    jobject obj_;
 };
 
 /**

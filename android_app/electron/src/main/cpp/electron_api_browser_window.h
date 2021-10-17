@@ -17,8 +17,6 @@ private:
     void LoadURL(const std::string &url);
 
     void Show();
-
-    int web_contents_id_;
 };
 
 template<>

@@ -51,9 +51,9 @@ class Electron private constructor(
         }
     }
 
-    internal fun requestRendererProcess(browserWindowProperty: BrowserWindowProperty): WebContents {
-        val webContents = WebContents(this, browserWindowProperty)
-        webContentsMap[webContents.id] = webContents
+    internal fun requestRendererProcess(weakMapId: Int, browserWindowProperty: BrowserWindowProperty): WebContents {
+        val webContents = WebContents(this, browserWindowProperty, weakMapId)
+        webContentsMap[webContents.weakMapId] = webContents
         return webContents
     }
 

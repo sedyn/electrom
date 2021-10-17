@@ -14,18 +14,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 internal class WebContents(
     private val electron: Electron,
-    private val browserWindowProperties: BrowserWindowProperty
+    private val browserWindowProperties: BrowserWindowProperty,
+    val weakMapId: Int
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
-
-    companion object {
-
-        private val webContentsIdTracker = AtomicInteger(0);
-
-    }
-
-    val id = webContentsIdTracker.getAndIncrement()
 
     private lateinit var webView: ElectronWebView
 
