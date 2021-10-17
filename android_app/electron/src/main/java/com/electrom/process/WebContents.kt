@@ -10,22 +10,14 @@ import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
 import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
-import java.util.concurrent.atomic.AtomicInteger
 
 internal class WebContents(
     private val electron: Electron,
-    private val browserWindowProperties: BrowserWindowProperty
+    private val browserWindowProperties: BrowserWindowProperty,
+    val weakMapId: Int
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
-
-    companion object {
-
-        private val webContentsIdTracker = AtomicInteger(0);
-
-    }
-
-    val id = webContentsIdTracker.getAndIncrement()
 
     private lateinit var webView: ElectronWebView
 
@@ -53,7 +45,7 @@ internal class WebContents(
             }
 
             electron.rendererLayout.addView(webView)
-            Log.d(LOG_TAG, "after attach")
+            Log.d(LOG_TAG, "WebView attached")
         }
     }
 

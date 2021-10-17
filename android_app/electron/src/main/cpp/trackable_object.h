@@ -41,8 +41,8 @@ namespace electron {
 
 namespace gin_helper {
     template<typename T>
-    class TrackableObject : public gin_helper::Wrappable<T>,
-                            public gin_helper::EventEmitterMixin<T> {
+    class TrackableObject : public Wrappable<T>,
+                            public EventEmitterMixin<T> {
     public:
         static T *FromWeakMapID(v8::Isolate *isolate, int id) {
             if (!weak_map_)

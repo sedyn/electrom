@@ -54,7 +54,9 @@ void ElectronHandler::UvRunOnce() {
 ElectronHandler *handler = nullptr;
 
 std::string ConvertJStringToString(JNIEnv *env, jobjectArray arguments, int index) {
-    return std::string(env->GetStringUTFChars((jstring) env->GetObjectArrayElement(arguments, index), nullptr));
+    return std::string(
+            env->GetStringUTFChars((jstring) env->GetObjectArrayElement(arguments, index),
+                                   nullptr));
 }
 
 ElectronModulePaths *ParseArguments(JNIEnv *env,
@@ -101,4 +103,17 @@ Java_com_electrom_process_MainProcess_uvRunOnce(
         JNIEnv *env,
         jobject thiz) {
     handler->UvRunOnce();
+}
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_electrom_process_MainProcess_emitEvent(
+        JNIEnv *env,
+        jobject thiz,
+        jint web_contents_id,
+        jstring event) {
+    Isolate *isolate = JavascriptEnvironment::GetIsolate();
+    BrowserWindow* browserWindow = BrowserWindow::FromWeakMapID(isolate, web_contents_id);
+    browserWindow->Emit(env->GetStringUTFChars(event, nullptr));
 }

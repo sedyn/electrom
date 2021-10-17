@@ -12,7 +12,7 @@ void SetEventEmitterPrototype(const v8::FunctionCallbackInfo<v8::Value> &args) {
     GetEventEmitterPrototypeReference()->Reset(isolate, args[0].As<v8::Object>());
 }
 
-namespace internal {
+namespace gin_helper::internal {
 
     v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate *isolate) {
         if (event_emitter.IsEmpty()) {

@@ -61,7 +61,7 @@ node::Environment *NodeBinding::CreateEnvironment(
     // args.insert(args.begin() + 1, "electron/js2c/browser_init");
     std::vector<std::string> args = {
             "electron",
-            electron_module_paths_->browserInitScript + "/" + "browser_init.js",
+            electron_module_paths_->browserInitScript + "/" + "browser-init.js",
             electron_module_paths_->assetsPackage + "/" + electron_module_paths_->mainStartupScript
     };
     std::vector<std::string> exec_args;

@@ -26,18 +26,22 @@ internal class MainProcess(
 
     private lateinit var webContents: WebContents
 
-    private fun createWebContents(properties: String): Int {
-        webContents = electron.requestRendererProcess(properties.toObject())
-        return webContents.id
+    private fun createWebContents(weakMapId: Int, properties: String) {
+        webContents = electron.requestRendererProcess(weakMapId, properties.toObject())
     }
+
+    private external fun emitEvent(webContentsId: Int, event: String)
 
     private fun commandToWebContents(webContentsId: Int, command: String, arguments: String?) {
         Log.d(LOG_TAG, "CALL -> $command(${arguments ?: ""})")
         when (command) {
             "LoadURL" -> {
-                webContents.loadUrl(arguments!!)
+                handler.post {
+                    webContents.loadUrl(arguments!!)
+                    emitEvent(webContents.weakMapId, "ready-to-show")
+                }
             }
-            "show" -> {
+            "Show" -> {
                 webContents.show()
             }
         }
