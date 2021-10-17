@@ -1,6 +1,6 @@
 #include "event_emitter_caller.h"
 
-v8::Local<v8::Value> internal::CallMethodWithArgs(v8::Isolate *isolate,
+v8::Local<v8::Value> gin_helper::internal::CallMethodWithArgs(v8::Isolate *isolate,
                                                   v8::Local<v8::Object> obj,
                                                   const char *method,
                                                   ValueVector *args) {

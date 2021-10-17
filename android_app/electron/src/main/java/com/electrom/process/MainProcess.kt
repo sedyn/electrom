@@ -37,7 +37,7 @@ internal class MainProcess(
             "LoadURL" -> {
                 webContents.loadUrl(arguments!!)
             }
-            "show" -> {
+            "Show" -> {
                 webContents.show()
             }
         }

@@ -11,7 +11,7 @@ app.once('ready', () => {
     // Set the initial height to 500px
     height: 500,
     // Don't show the window until it ready, this prevents any white flickering
-    show: true,
+    show: false,
     // Don't allow the window to be resized.
     resizable: false,
     backgroundColor: '#00ff00'
@@ -25,10 +25,10 @@ app.once('ready', () => {
     protocol: 'file:',
     slashes: true
   }))
-//
-//  // Show window when page is ready
-//  window.once('ready-to-show', () => {
-//    console.log('ready-to-show')
-//    window.show()
-//  })
+
+  // Show window when page is ready
+  window.once('ready-to-show', () => {
+    console.log('ready-to-show')
+    window.show()
+  })
 })

@@ -18,20 +18,20 @@ namespace gin_helper {
             v8::Local<v8::Object> wrapper;
             if (!static_cast<T *>(this)->GetWrapper(isolate).ToLocal(&wrapper))
                 return false;
-            gin_helper::EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
+            EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
             return true;
         }
 
     protected:
         EventEmitterMixin() = default;
 
-        virtual gin_helper::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate *isolate) {
+        virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate *isolate) {
             // TODO Add cache for constructor like gin_helper::PerIsolateData
             v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(isolate);
             constructor->SetClassName(v8::String::NewFromUtf8(isolate, static_cast<T *>(this)->GetTypeName()));
             constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
 
-            return gin_helper::ObjectTemplateBuilder(isolate, static_cast<T *>(this)->GetTypeName(), constructor->InstanceTemplate());
+            return ObjectTemplateBuilder(isolate, static_cast<T *>(this)->GetTypeName(), constructor->InstanceTemplate());
         }
     };
 }
