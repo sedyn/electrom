@@ -10,7 +10,6 @@ import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
 import com.electrom.process.data.BrowserWindowProperty
 import com.electrom.view.ElectronWebView
-import java.util.concurrent.atomic.AtomicInteger
 
 internal class WebContents(
     private val electron: Electron,
@@ -46,7 +45,7 @@ internal class WebContents(
             }
 
             electron.rendererLayout.addView(webView)
-            Log.d(LOG_TAG, "after attach")
+            Log.d(LOG_TAG, "WebView attached")
         }
     }
 

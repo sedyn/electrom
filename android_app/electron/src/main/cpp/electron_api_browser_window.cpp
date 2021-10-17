@@ -72,9 +72,8 @@ BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTempla
 
     NODE_SET_PROTOTYPE_METHOD(prototype, "loadURL", [](const FunctionCallbackInfo<Value> &info) {
         Isolate *isolate = info.GetIsolate();
-        int id = info.Holder()->Get(helper::StringToSymbol(isolate, "id")).As<Int32>()->Value();
-        BrowserWindow *self = FromWeakMapID(isolate, id);
-
+        BrowserWindow *self = nullptr;
+        gin::ConvertFromV8(isolate, info.Holder(), &self);
         if (!info[0]->IsString()) {
             return;
         }
@@ -84,8 +83,8 @@ BrowserWindow::BuildPrototype(v8::Isolate *isolate, v8::Local<v8::FunctionTempla
 
     NODE_SET_PROTOTYPE_METHOD(prototype, "show", [](const FunctionCallbackInfo<Value> &info) {
         Isolate *isolate = info.GetIsolate();
-        int id = info.Holder()->Get(helper::StringToSymbol(isolate, "id")).As<Int32>()->Value();
-        BrowserWindow *self = FromWeakMapID(isolate, id);
+        BrowserWindow *self = nullptr;
+        gin::ConvertFromV8(isolate, info.Holder(), &self);
 
         self->Show();
     });
