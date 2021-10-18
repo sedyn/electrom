@@ -19,6 +19,8 @@ namespace gin_helper {
 
         virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
+        virtual void Init(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+
     private:
         static void FirstWeakCallback(const v8::WeakCallbackInfo<WrappableBase> &data);
 

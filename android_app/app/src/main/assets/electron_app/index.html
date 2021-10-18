@@ -10,7 +10,7 @@
     <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
     <script src="./window.cc71ee28.js"></script>
     <script>
-        const { ipcRenderer } = window.require('electron');
+        const { ipcRenderer } = require('electron');
         console.log(ipcRenderer.sendSync('sync-message', 'test'))
     </script>
 </head>

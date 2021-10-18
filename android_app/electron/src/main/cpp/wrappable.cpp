@@ -55,4 +55,9 @@ namespace gin_helper {
         wrapper_.Reset(isolate, wrapper);
         wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kInternalFields);
     }
+
+    void WrappableBase::Init(v8::Isolate *isolate, v8::Local<v8::Object> wrapper) {
+        wrapper_.Reset(isolate, wrapper);
+        wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kInternalFields);
+    }
 }

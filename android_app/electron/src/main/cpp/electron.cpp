@@ -15,6 +15,7 @@
 
 #include "electron_api_app.h"
 #include "electron_api_browser_window.h"
+#include "electron_api_ipc_main.h"
 
 using node::Environment;
 using node::IsolateData;
@@ -99,21 +100,35 @@ Java_com_electrom_process_MainProcess_startMainModule(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_electrom_process_MainProcess_uvRunOnce(
-        JNIEnv *env,
-        jobject thiz) {
+Java_com_electrom_process_MainProcess_uvRunOnce(JNIEnv *env, jobject thiz) {
     handler->UvRunOnce();
 }
 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_electrom_process_MainProcess_emitEvent(
+Java_com_electrom_process_MainProcess_emitWebContentsEvent(
         JNIEnv *env,
         jobject thiz,
         jint web_contents_id,
         jstring event) {
     Isolate *isolate = JavascriptEnvironment::GetIsolate();
-    BrowserWindow* browserWindow = BrowserWindow::FromWeakMapID(isolate, web_contents_id);
+    BrowserWindow *browserWindow = BrowserWindow::FromWeakMapID(isolate, web_contents_id);
     browserWindow->Emit(env->GetStringUTFChars(event, nullptr));
+}
+
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_electrom_process_MainProcess_emitIpcMainSync(
+        JNIEnv *env,
+        jobject thiz,
+        jstring event,
+        jstring data) {
+    std::string result = IpcMain::Get()->HandleSyncEvent(
+            env->GetStringUTFChars(event, nullptr),
+            env->GetStringUTFChars(data, nullptr)
+    );
+
+    return env->NewStringUTF(result.c_str());
 }

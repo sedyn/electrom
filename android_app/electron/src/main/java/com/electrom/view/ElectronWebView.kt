@@ -8,9 +8,13 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.electrom.Electron
+import com.electrom.process.MainProcess
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ViewConstructor")
-class ElectronWebView(electron: Electron) : WebView(electron.activity) {
+internal class ElectronWebView(
+    electron: Electron,
+    mainProcess: MainProcess
+) : WebView(electron.activity) {
 
     private val electronInterface: ElectronInterface
 
@@ -20,33 +24,48 @@ class ElectronWebView(electron: Electron) : WebView(electron.activity) {
             (function(window) {
                 const ipcRenderer = new Function();
                 
-                ipcRenderer.sendTracker = new Map();
+                ipcRenderer.ipcTracker = new Map();
                 ipcRenderer.handler = new Map();
                 
                 ipcRenderer.sendSync = function(channel, data) {
                     return window['@@android'].ipcRendererSendSync(channel, data);
-                }
+                };
                 
                 ipcRenderer.on = function(channel, cb) {
                     if (!this.handler.has(channel)) {
                         this.handler.add(channel, cb);
                     }
-                }
+                };
                 
                 ipcRenderer.emit = function(channel, event) {
                     const cb = this.handler.get(channel);
                     if (cb !== undefined) {
                         cb(event);
                     }
-                }
+                };
                 
                 ipcRenderer.send = function(channel, data) {
-                    window['@@android'].ipcRendererSend(channel, data);
-                }
+                    const trackId = window['@@android'].ipcRendererSend(channel, data);
+                    return new Promise((resolve, reject) => {
+                        this.ipcTracker[trackId] = {
+                            resolve, reject, trackId
+                        }
+                    });
+                };
+                
+                ipcRenderer.__resolve = function(trackId, success, data) {
+                    const promise = this.ipcTracker[trackId];
+                    if (promise === undefined) return;
+                    if (success) {
+                        promise.resolve(data);
+                    } else {
+                        promise.reject();
+                    }
+                };
                 
                 window['@@electron'] = {
                     ipcRenderer
-                }
+                };
 
                 window.require = function(path) {
                     if (path === 'electron') {
@@ -56,7 +75,7 @@ class ElectronWebView(electron: Electron) : WebView(electron.activity) {
                     }
                 };
                 
-                window.module = {}
+                window.module = {};
             })(window);
             """
     }
@@ -75,7 +94,7 @@ class ElectronWebView(electron: Electron) : WebView(electron.activity) {
                     electron.setTitle(view.title ?: "<electron>")
                 }
 
-                override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                override fun onLoadResource(view: WebView?, url: String?) {
                     evaluateJavascript(PRE_LOAD_SCRIPT, null)
                 }
             }
@@ -99,7 +118,14 @@ class ElectronWebView(electron: Electron) : WebView(electron.activity) {
 
             setWebContentsDebuggingEnabled(true)
         }
-        electronInterface = ElectronInterface(context)
+        electronInterface = ElectronInterface(context, mainProcess)
         addJavascriptInterface(electronInterface, "@@android")
+    }
+
+    fun resolveAsyncMessage(trackId: String, isSuccess: Boolean, data: String?) {
+        evaluateJavascript(
+            "window['@@electron'].ipcRenderer.__resolve('$trackId', $isSuccess, '$data');",
+            null
+        )
     }
 }
