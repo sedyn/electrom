@@ -1,7 +1,7 @@
 #ifndef ANDROID_APP_EVENT_EMITTER_CALLER_H
 #define ANDROID_APP_EVENT_EMITTER_CALLER_H
 
-#include "libnode/include/node/node.h"
+#include "converter.h"
 #include <vector>
 
 namespace gin_helper {
@@ -24,7 +24,8 @@ namespace gin_helper {
                                           const char *name,
                                           Args &&... args) {
         internal::ValueVector converted_args = {
-                v8::String::NewFromUtf8(isolate, name)
+                v8::String::NewFromUtf8(isolate, name),
+                gin::ConvertToV8(isolate, std::forward<Args>(args))...,
         };
         return internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
     }

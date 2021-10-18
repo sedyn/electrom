@@ -126,7 +126,7 @@ Electron loads internal code before executing `MainStartupScript`.
 Electron uses js2c in Node.js for embedding javascript code into C++ binary.
 
 Electron uses Webpack to merge `lib/browser/**/*.ts` into single file `browser_init.js`. 
-When Webpack complies these files, it transforms `require('electron')` 
+When Webpack compiles these files, it transforms `require('electron')` 
 to `require('lib/browser/api/exports/electron.ts')` because of Webpack config files in Electron.
 
 

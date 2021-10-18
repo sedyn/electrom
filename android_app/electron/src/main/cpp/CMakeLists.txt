@@ -41,6 +41,7 @@ add_library( # Sets the name of the library.
 
         electron_api_app.cpp
         electron_api_browser_window.cpp
+        electron_api_ipc_main.cpp
 
         electron.cpp)
 

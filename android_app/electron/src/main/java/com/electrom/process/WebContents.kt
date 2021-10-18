@@ -14,7 +14,8 @@ import com.electrom.view.ElectronWebView
 internal class WebContents(
     private val electron: Electron,
     private val browserWindowProperties: BrowserWindowProperty,
-    val weakMapId: Int
+    val weakMapId: Int,
+    private val mainProcess: MainProcess
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -26,7 +27,7 @@ internal class WebContents(
     }
 
     private fun attachWebViewOnStart() {
-        webView = ElectronWebView(electron).apply {
+        webView = ElectronWebView(electron, mainProcess).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT

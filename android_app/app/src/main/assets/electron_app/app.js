@@ -1,6 +1,11 @@
-const {app, BrowserWindow} = require('electron') // http://electronjs.org/docs/api
+const {app, BrowserWindow, ipcMain} = require('electron') // http://electronjs.org/docs/api
 const path = require('path') // https://nodejs.org/api/path.html
 const url = require('url') // https://nodejs.org/api/url.html
+
+ipcMain.on('sync-message', (event, arg) => {
+    event.returnValue = 'Hello, ' + arg;
+    console.log(JSON.stringify(event), arg);
+})
 
 // Wait until the app is ready
 app.once('ready', () => {
@@ -16,8 +21,6 @@ app.once('ready', () => {
     resizable: false,
     backgroundColor: '#00ff00'
   })
-
-  console.log(window.id);
 
   // Load a URL in the window to the local index.html path
   window.loadURL(url.format({

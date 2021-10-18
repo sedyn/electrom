@@ -2,6 +2,7 @@
 #include "log.h"
 #include "android_context.h"
 #include "libnode/include/node/env-inl.h"
+#include "locker.h"
 
 #include <sys/epoll.h>
 #include <vector>
@@ -11,7 +12,8 @@ using namespace v8;
 #define ELECTRON_BUILTIN_MODULES(V) \
     V(electron_browser_window) \
     V(electron_browser_event_emitter) \
-    V(electron_browser_app)
+    V(electron_browser_app) \
+    V(electron_ipc_main)
 
 #define V(modname) void _register_##modname();
 
@@ -141,33 +143,13 @@ void NodeBinding::RunMessageLoop() {
     UvRunOnce();
 }
 
-// Simple copy of gin_helper::Locker
-class ElectronLocker {
-public:
-    explicit ElectronLocker(Isolate *isolate);
-
-    ~ElectronLocker();
-
-    static inline bool IsBrowserProcess() { return Locker::IsActive(); }
-
-private:
-    std::unique_ptr<Locker> locker_;
-};
-
-ElectronLocker::ElectronLocker(Isolate *isolate) {
-    if (IsBrowserProcess())
-        locker_ = std::make_unique<Locker>(isolate);
-}
-
-ElectronLocker::~ElectronLocker() = default;
-
 void NodeBinding::UvRunOnce() {
     node::Environment *env = uv_env();
     if (!env) {
         return;
     }
 
-    ElectronLocker locker(env->isolate());
+    gin_helper::ElectronLocker locker(env->isolate());
 
     HandleScope handle_scope(env->isolate());
 
