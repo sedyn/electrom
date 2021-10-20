@@ -18,8 +18,6 @@ internal class WebContents(
     private val mainProcess: MainProcess
 ) {
 
-    private val handler = Handler(Looper.getMainLooper())
-
     private lateinit var webView: ElectronWebView
 
     init {
@@ -27,7 +25,7 @@ internal class WebContents(
     }
 
     private fun attachWebViewOnStart() {
-        webView = ElectronWebView(electron, mainProcess).apply {
+        webView = ElectronWebView(electron).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -56,5 +54,9 @@ internal class WebContents(
 
     internal fun show() {
         webView.visibility = View.VISIBLE
+    }
+
+    internal fun replyToIpcRenderer(trackId: String, channel: String, response: String) {
+        webView.resolveAsyncMessage(channel, response)
     }
 }

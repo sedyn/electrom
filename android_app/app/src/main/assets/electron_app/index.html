@@ -11,7 +11,11 @@
     <script src="./window.cc71ee28.js"></script>
     <script>
         const { ipcRenderer } = require('electron');
-        console.log(ipcRenderer.sendSync('sync-message', 'test'))
+        console.log(ipcRenderer.sendSync('sync-message', 'syncData'));
+        ipcRenderer.on('async-reply', (event, args) => {
+            console.log('async-reply -> ' + args);
+        });
+        ipcRenderer.send('async-message', 'asyncData');
     </script>
 </head>
 <body>

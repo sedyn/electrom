@@ -12,7 +12,6 @@ class Electron private constructor(
     internal val activity: Activity,
     internal val rendererLayout: ViewGroup
 ) {
-
     companion object {
         init {
             System.loadLibrary("electron")
@@ -36,14 +35,25 @@ class Electron private constructor(
 
     }
 
+    private val mainProcess = MainProcess(this, "app.js")
+    private val handler = Handler(Looper.getMainLooper())
+
     internal fun setTitle(title: String) {
-        Handler(Looper.getMainLooper()).post {
+        handler.post {
             activity.title = title
         }
     }
 
     fun startMainProcess() {
-        MainProcess(this, "app.js").execute()
+        mainProcess.startEmbeddedNodeJs()
+    }
+
+    internal fun sendSyncToIpcMain(channel: String, data: String?): String {
+        return mainProcess.sendSyncToIpcMain(channel, data)
+    }
+
+    internal fun sendAsyncToIpcMain(trackId: String, channel: String, data: String?) {
+        mainProcess.sendAsyncToIpcMain(trackId, channel, data)
     }
 
 }

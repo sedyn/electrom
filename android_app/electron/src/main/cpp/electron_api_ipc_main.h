@@ -15,7 +15,9 @@ public:
 
     std::string HandleSyncEvent(const char *event, const char *data);
 
-    const char* GetTypeName();
+    void HandleAsyncEvent(const char *track_id, const char *event, const char *data);
+
+    const char *GetTypeName();
 
 };
 

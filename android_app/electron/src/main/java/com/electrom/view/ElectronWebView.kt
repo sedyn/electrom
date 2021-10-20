@@ -2,18 +2,15 @@ package com.electrom.view
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.graphics.Bitmap
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.electrom.Electron
-import com.electrom.process.MainProcess
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ViewConstructor")
 internal class ElectronWebView(
-    electron: Electron,
-    mainProcess: MainProcess
+    electron: Electron
 ) : WebView(electron.activity) {
 
     private val electronInterface: ElectronInterface
@@ -23,8 +20,6 @@ internal class ElectronWebView(
             """
             (function(window) {
                 const ipcRenderer = new Function();
-                
-                ipcRenderer.ipcTracker = new Map();
                 ipcRenderer.handler = new Map();
                 
                 ipcRenderer.sendSync = function(channel, data) {
@@ -32,35 +27,18 @@ internal class ElectronWebView(
                 };
                 
                 ipcRenderer.on = function(channel, cb) {
-                    if (!this.handler.has(channel)) {
-                        this.handler.add(channel, cb);
-                    }
+                    this.handler.set(channel, cb);
                 };
                 
-                ipcRenderer.emit = function(channel, event) {
+                ipcRenderer.emit = function(channel, data) {
                     const cb = this.handler.get(channel);
-                    if (cb !== undefined) {
-                        cb(event);
+                    if (cb) {
+                        cb({}, data);
                     }
                 };
                 
                 ipcRenderer.send = function(channel, data) {
                     const trackId = window['@@android'].ipcRendererSend(channel, data);
-                    return new Promise((resolve, reject) => {
-                        this.ipcTracker[trackId] = {
-                            resolve, reject, trackId
-                        }
-                    });
-                };
-                
-                ipcRenderer.__resolve = function(trackId, success, data) {
-                    const promise = this.ipcTracker[trackId];
-                    if (promise === undefined) return;
-                    if (success) {
-                        promise.resolve(data);
-                    } else {
-                        promise.reject();
-                    }
                 };
                 
                 window['@@electron'] = {
@@ -118,13 +96,13 @@ internal class ElectronWebView(
 
             setWebContentsDebuggingEnabled(true)
         }
-        electronInterface = ElectronInterface(context, mainProcess)
+        electronInterface = ElectronInterface(electron)
         addJavascriptInterface(electronInterface, "@@android")
     }
 
-    fun resolveAsyncMessage(trackId: String, isSuccess: Boolean, data: String?) {
+    fun resolveAsyncMessage(channel: String, data: String) {
         evaluateJavascript(
-            "window['@@electron'].ipcRenderer.__resolve('$trackId', $isSuccess, '$data');",
+            "window['@@electron'].ipcRenderer.emit('$channel', '$data');",
             null
         )
     }

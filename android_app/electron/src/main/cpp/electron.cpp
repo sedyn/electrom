@@ -127,8 +127,23 @@ Java_com_electrom_process_MainProcess_emitIpcMainSync(
         jstring data) {
     std::string result = IpcMain::Get()->HandleSyncEvent(
             env->GetStringUTFChars(event, nullptr),
-            env->GetStringUTFChars(data, nullptr)
+            data == nullptr ? nullptr : env->GetStringUTFChars(data, nullptr)
     );
 
     return env->NewStringUTF(result.c_str());
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_electrom_process_MainProcess_emitIpcMainAsync(
+        JNIEnv *env,
+        jobject thiz,
+        jstring track_id,
+        jstring event,
+        jstring data) {
+    IpcMain::Get()->HandleAsyncEvent(
+            env->GetStringUTFChars(track_id, nullptr),
+            env->GetStringUTFChars(event, nullptr),
+            data == nullptr ? nullptr : env->GetStringUTFChars(data, nullptr)
+    );
 }
