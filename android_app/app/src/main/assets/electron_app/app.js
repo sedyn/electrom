@@ -4,7 +4,10 @@ const url = require('url') // https://nodejs.org/api/url.html
 
 ipcMain.on('sync-message', (event, arg) => {
     event.returnValue = 'Hello, ' + arg;
-    console.log(JSON.stringify(event), arg);
+})
+
+ipcMain.on('async-message', (event, arg) => {
+    event.reply('async-reply', 'Hello, ' + arg);
 })
 
 // Wait until the app is ready

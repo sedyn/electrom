@@ -46,6 +46,15 @@ int AndroidContext::CreateWebContents(int id, const char *propertiesJson) const 
     return id;
 }
 
+void AndroidContext::ReplyToIpcRenderer(const char* track_id, const char* channel, const char* response) const {
+    jclass cls = env_->GetObjectClass(globalRef);
+    jmethodID mId = env_->GetMethodID(cls, "replyToIpcRenderer", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+    jstring j_track_id = env_->NewStringUTF(track_id);
+    jstring j_channel = env_->NewStringUTF(channel);
+    jstring j_response = env_->NewStringUTF(response);
+    env_->CallVoidMethod(globalRef, mId, j_track_id, j_channel, j_response);
+}
+
 void internalThread(AndroidThread func, void *data) {
     JNIEnv *env = nullptr;
     globalVM->AttachCurrentThread(&env, nullptr);
@@ -56,7 +65,6 @@ void internalThread(AndroidThread func, void *data) {
 
     auto internalAndroidContext = new AndroidContext;
 //    internalAndroidContext->env = env;
-//    internalAndroidContext->obj = globalRef;
 
     func(internalAndroidContext, data);
     free(internalAndroidContext);
@@ -84,8 +92,8 @@ void DetachCurrentThread() {
     globalVM->DetachCurrentThread();
 }
 
-void AddTaskForMainLooper(JNIEnv *env) {
+void registerNextTick(JNIEnv *env) {
     jclass cls = env->GetObjectClass(globalRef);
-    jmethodID mId = env->GetMethodID(cls, "addTask", "()V");
+    jmethodID mId = env->GetMethodID(cls, "registerNextTick", "()V");
     env->CallVoidMethod(globalRef, mId);
 }

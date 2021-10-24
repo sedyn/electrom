@@ -11,6 +11,8 @@ public:
 
     void CommandToWebContents(const int id, const char *command, const char *argument) const;
 
+    void ReplyToIpcRenderer(const char* track_id, const char* channel, const char* response) const;
+
     static void Initialize(JNIEnv *env, jobject obj);
 
 private:
@@ -37,6 +39,6 @@ void DetachCurrentThread();
 /**
 * This method will be called in Embed Thread.
 */
-void AddTaskForMainLooper(JNIEnv *env);
+void registerNextTick(JNIEnv *env);
 
 #endif //ANDROID_APP_ANDROID_CONTEXT_H

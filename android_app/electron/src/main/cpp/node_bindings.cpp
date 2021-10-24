@@ -119,7 +119,7 @@ void NodeBinding::EmbedThreadRunner(void *arg) {
         LOG_INFO("WakeUpMainThread")
         // Register task to Android UI Thread Looper queue.
         // Instead of ThreadTaskRunnerHandle in electron.
-        AddTaskForMainLooper(env);
+        registerNextTick(env);
     }
 
     DetachCurrentThread();

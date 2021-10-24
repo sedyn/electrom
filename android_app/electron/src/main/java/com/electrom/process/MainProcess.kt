@@ -11,7 +11,7 @@ import com.electrom.extension.toObject
 
 internal class MainProcess(
     private val electron: Electron,
-    private val mainStartupScript: String
+    private val mainStartupScriptFile: String
 ) : ElectronProcess() {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -32,10 +32,22 @@ internal class MainProcess(
 
     private external fun emitWebContentsEvent(webContentsId: Int, event: String)
 
-    private external fun emitIpcMainSync(event: String, data: String): String
+    private external fun emitIpcMainSync(event: String, data: String?): String
 
-    internal fun sendSyncToIpcMain(event: String, data: String): String {
+    private external fun emitIpcMainAsync(trackId: String, event: String, data: String?)
+
+    private fun replyToIpcRenderer(trackId: String, channel: String, response: String) {
+        handler.post {
+            webContents.replyToIpcRenderer(trackId, channel, response)
+        }
+    }
+
+    internal fun sendSyncToIpcMain(event: String, data: String?): String {
         return emitIpcMainSync(event, data)
+    }
+
+    internal fun sendAsyncToIpcMain(trackId: String, event: String, data: String?) {
+        emitIpcMainAsync(trackId, event, data)
     }
 
     private fun commandToWebContents(webContentsId: Int, command: String, arguments: String?) {
@@ -53,28 +65,21 @@ internal class MainProcess(
         }
     }
 
-    /**
-     * Run UvEvent in UIThread
-     */
-    private fun addTask() {
+    private fun registerNextTick() {
         handler.post {
             uvRunOnce()
         }
     }
 
-    private fun startEmbeddedNodeJs() {
+    fun startEmbeddedNodeJs() {
         electron.activity.run {
             startMainModule(
                 arrayOf(
                     electronInternalScriptFolderPath,
                     electronResourceFolderPath,
-                    mainStartupScript
+                    mainStartupScriptFile
                 )
             )
         }
-    }
-
-    fun execute() {
-        startEmbeddedNodeJs()
     }
 }

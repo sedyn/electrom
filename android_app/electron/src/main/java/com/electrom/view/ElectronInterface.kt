@@ -1,24 +1,39 @@
 package com.electrom.view
 
-import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.webkit.JavascriptInterface
-import com.electrom.process.MainProcess
+import com.electrom.Electron
+import com.electrom.extension.LOG_TAG
+import com.electrom.extension.logDebug
 import java.util.*
 import java.util.concurrent.CountDownLatch
 
 internal class ElectronInterface(
-    context: Context,
-    private val mainProcess: MainProcess
+    private val electron: Electron
 ) {
+
+    companion object {
+        const val JAVASCRIPT_UNDEFINED = "undefined"
+    }
+
+    private fun checkUndefined(v: String?): String? {
+        return v?.takeIf {
+            it != JAVASCRIPT_UNDEFINED
+        }
+    }
 
     private val handler = Handler(Looper.getMainLooper())
 
     @JavascriptInterface
     fun ipcRendererSend(channel: String, data: String?): String {
+        Log.d(LOG_TAG, "sendAsync -> $channel : $data")
         val trackId = UUID.randomUUID().toString()
+        handler.post {
+            electron.sendAsyncToIpcMain(trackId, channel, checkUndefined(data))
+        }
+
         return trackId
     }
 
@@ -28,7 +43,7 @@ internal class ElectronInterface(
         val locker = CountDownLatch(1)
         var result: String? = null
         handler.post {
-            result = mainProcess.sendSyncToIpcMain(channel, data ?: "!!")
+            result = electron.sendSyncToIpcMain(channel, checkUndefined(data))
             locker.countDown()
         }
         locker.await()

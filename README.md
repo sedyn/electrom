@@ -1,37 +1,50 @@
 # Electrom
 # Architecture
+## Classes
+
+### [AndroidContext](https://github.com/doodot/electrom/blob/main/android_app/electron/src/main/cpp/android_context.cpp)
+This class manages object ref of Kotlin MainProcess instance and JNI Env of Android UI Thread.
+By using this class, Javascript callback function in C++ world can call Kotlin functions.
+
 ## Files
 
 ### android_app/app/src/main/assets/electron_app
-- Actual Javascript source code and asset files for electron app.
+- Actual Javascript source code and asset files for user's electron app.
 
-### android_app/electron
-- 라이브러리로 분리될 electron API 구현체
+### android_app/electron/*
+- Implementation of Electron API
 
 ### android_app/electron/src/main/cpp
 #### android_context.cpp
 - `CreateWebContents`
-    - Node에서 BrowserWindow 클래스가 생성될 때 호출되는 JNI 함수
+    - JNI function which is called by BrowserWindow when constructor tries to create WebView.
 - `CommandToWebContents`
-    - Android WebView에 명령이 필요할 때 실행되는 JNI 함수
+    - JNI function for manipluating Android WebView.
 
 #### electron.cpp
 - `Java_com_electrom_process_MainProcess_startMainModule`
-    - electron 메인 모듈 시작 함수 Node embedded 환경을 시작한다.
+    - Execute Node embedded enviroment for Electron main process.
 
 ### android_app/electron/src/main/java
-#### ElectronApp.kt
-- `startMainProcess`
-    - electron 자바스크립트 코드를 로드하기 위한 진입점
+#### Electron.kt
+- Boostrapper for user's electron app.
 
 #### process/MainProcess.kt
-- Node embedded 환경을 구성하고 NDK에서 실행되는 Java함수를 핸들링하는 클래스
+- Bridge for Android and Node.js
+    - Handle requests from NDK. 
 
-#### process/RendererProcess.kt
-- ElectronWebView를 관리하는 클래스
+#### process/Webcontents.kt
+- Wrapper class for ElectronWebView.
 
 #### view/ElectronWebView.kt
-- electron의 요구사항에 맞는 옵션이 설정되어 있는 WebView
+- WebView that satifies Electron's requirements.
+    - Access file protocol url
+    - [Ignore CORS](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/cors-and-webview-api.md)
+
+#### view/ElectronInterface 
+- Javascript interface of Android for providing Electron renderer modules.
+
+## Golas
 
 ## Current Goal
 - Support only one renderer process
@@ -41,7 +54,6 @@
 ## Not Goal
 - webPrefernces options (e.g. Node integration)
     - but, you can use devTools option via chrome `chrome://inspect/#devices`
-
 
 # Important concepts in Electron
 ## Wrappable
@@ -117,8 +129,6 @@ class BrowserWindow : public TrackableObject<BrowserWindow> {
 }
 ```
 
-## EventEmitterMixin
-
 # How Electron loads modules
 ## Internal `require('electron')`
 Electron loads internal code before executing `MainStartupScript`.
@@ -127,8 +137,7 @@ Electron uses js2c in Node.js for embedding javascript code into C++ binary.
 
 Electron uses Webpack to merge `lib/browser/**/*.ts` into single file `browser_init.js`. 
 When Webpack compiles these files, it transforms `require('electron')` 
-to `require('lib/browser/api/exports/electron.ts')` because of Webpack config files in Electron.
-
+to `require('lib/browser/api/exports/electron.ts')` because of [Webpack config](https://github.com/electron/electron/blob/main/build/webpack/webpack.config.base.js) files in Electron.
 
 ## MainStartupScript `require('electron')`
 ```js
@@ -144,4 +153,4 @@ require('electron')
 
 `Module` manages search path of `require` function and cache of Node.js libraries.
 
-[lib/common/reset-search-path.ts](https://github.com/electron/electron/blob/main/lib/common/reset-search-paths.ts) adds Electron modules in `lib/browser/api/exports/electron.ts` into cache with keys; (`'electron'`, `'electron/main'`).
+[lib/common/reset-search-path.ts](https://github.com/electron/electron/blob/main/lib/common/reset-search-paths.ts) adds Electron modules in `lib/browser/api/exports/electron.ts` into Module's cache with keys; (`'electron'`, `'electron/main'`).
