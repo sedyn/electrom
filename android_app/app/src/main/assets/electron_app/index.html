@@ -15,7 +15,9 @@
         ipcRenderer.on('async-reply', (event, args) => {
             console.log('async-reply -> ' + args);
         });
-        ipcRenderer.send('async-message', 'asyncData');
+        setTimeout(() => {
+            ipcRenderer.send('async-message', 'asyncData');
+        }, 0)
     </script>
 </head>
 <body>

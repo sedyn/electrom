@@ -2,11 +2,14 @@ package com.electrom.view
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.graphics.Bitmap
+import android.util.Base64
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.electrom.Electron
+import com.electrom.extension.ELECTRON_INTERNAL_SCRIPT_FOLDER
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ViewConstructor")
 internal class ElectronWebView(
@@ -15,48 +18,16 @@ internal class ElectronWebView(
 
     private val electronInterface: ElectronInterface
 
-    companion object {
-        private const val PRE_LOAD_SCRIPT =
-            """
-            (function(window) {
-                const ipcRenderer = new Function();
-                ipcRenderer.handler = new Map();
-                
-                ipcRenderer.sendSync = function(channel, data) {
-                    return window['@@android'].ipcRendererSendSync(channel, data);
-                };
-                
-                ipcRenderer.on = function(channel, cb) {
-                    this.handler.set(channel, cb);
-                };
-                
-                ipcRenderer.emit = function(channel, data) {
-                    const cb = this.handler.get(channel);
-                    if (cb) {
-                        cb({}, data);
-                    }
-                };
-                
-                ipcRenderer.send = function(channel, data) {
-                    const trackId = window['@@android'].ipcRendererSend(channel, data);
-                };
-                
-                window['@@electron'] = {
-                    ipcRenderer
-                };
-
-                window.require = function(path) {
-                    if (path === 'electron') {
-                        return window['@@electron'];
-                    } else {
-                        throw new Error('Module not found ' + path)
-                    }
-                };
-                
-                window.module = {};
-            })(window);
-            """
-    }
+    private val preLoadScript = electron
+        .activity
+        .assets
+        .open("${ELECTRON_INTERNAL_SCRIPT_FOLDER}/renderer-init.js")
+        .use {
+            val buffer = ByteArray(it.available())
+            it.read(buffer)
+            buffer
+        }
+        .let { Base64.encodeToString(it, Base64.NO_WRAP) }
 
     init {
         settings.apply {
@@ -68,12 +39,24 @@ internal class ElectronWebView(
             allowUniversalAccessFromFileURLs = true
 
             webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView, url: String) {
-                    electron.setTitle(view.title ?: "<electron>")
+                override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+                    evaluateJavascript(
+                        """
+                        (function() {
+                        var parent = document.getElementsByTagName('head').item(0);
+                        var script = document.createElement('script');
+                        script.type = 'text/javascript';
+                        script.innerHTML = window.atob('${preLoadScript}');
+                        parent.prepend(script);
+                        })()
+                    """.trimIndent(), null
+                    )
+                    super.onPageStarted(view, url, favicon)
                 }
 
-                override fun onLoadResource(view: WebView?, url: String?) {
-                    evaluateJavascript(PRE_LOAD_SCRIPT, null)
+                override fun onPageFinished(view: WebView, url: String?) {
+                    electron.setTitle(view.title ?: "<electron>")
+                    super.onPageFinished(view, url)
                 }
             }
             webChromeClient = object : WebChromeClient() {
