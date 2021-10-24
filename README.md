@@ -37,7 +37,7 @@ By using this class, Javascript callback function in C++ world can call Kotlin f
 - Wrapper class for ElectronWebView.
 
 #### view/ElectronWebView.kt
-- WebView that satifies Electron's requirements.
+- WebView that satisfies Electron's requirements.
     - Access file protocol url
     - [Ignore CORS](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/cors-and-webview-api.md)
 
