@@ -2,8 +2,6 @@ package com.electrom.view
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.graphics.Bitmap
-import android.util.Base64
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -25,9 +23,8 @@ internal class ElectronWebView(
         .use {
             val buffer = ByteArray(it.available())
             it.read(buffer)
-            buffer
+            String(buffer, Charsets.UTF_8)
         }
-        .let { Base64.encodeToString(it, Base64.NO_WRAP) }
 
     init {
         settings.apply {
@@ -39,21 +36,6 @@ internal class ElectronWebView(
             allowUniversalAccessFromFileURLs = true
 
             webViewClient = object : WebViewClient() {
-                override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
-                    evaluateJavascript(
-                        """
-                        (function() {
-                        var parent = document.getElementsByTagName('head').item(0);
-                        var script = document.createElement('script');
-                        script.type = 'text/javascript';
-                        script.innerHTML = window.atob('${preLoadScript}');
-                        parent.prepend(script);
-                        })()
-                    """.trimIndent(), null
-                    )
-                    super.onPageStarted(view, url, favicon)
-                }
-
                 override fun onPageFinished(view: WebView, url: String?) {
                     electron.setTitle(view.title ?: "<electron>")
                     super.onPageFinished(view, url)
@@ -79,7 +61,7 @@ internal class ElectronWebView(
 
             setWebContentsDebuggingEnabled(true)
         }
-        electronInterface = ElectronInterface(electron)
+        electronInterface = ElectronInterface(electron, preLoadScript)
         addJavascriptInterface(electronInterface, "@@android")
     }
 

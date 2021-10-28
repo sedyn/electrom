@@ -6,12 +6,12 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import com.electrom.Electron
 import com.electrom.extension.LOG_TAG
-import com.electrom.extension.logDebug
 import java.util.*
 import java.util.concurrent.CountDownLatch
 
 internal class ElectronInterface(
-    private val electron: Electron
+    private val electron: Electron,
+    private val preLoadScript: String
 ) {
 
     companion object {
@@ -48,6 +48,11 @@ internal class ElectronInterface(
         }
         locker.await()
         return result ?: "FAILED"
+    }
+
+    @JavascriptInterface
+    fun getPreLoadScript(): String {
+        return preLoadScript
     }
 
 }
