@@ -1,5 +1,8 @@
 # Electrom
 # Architecture
+
+![arch](./assets/architecture2.png)
+
 ## Classes
 
 ### [AndroidContext](https://github.com/doodot/electrom/blob/main/android_app/electron/src/main/cpp/android_context.cpp)
