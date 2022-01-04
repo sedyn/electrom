@@ -1,4 +1,8 @@
 # Electrom
+
+# 2021년 공개SW 개발자대회 티맥스OS 상
+https://www.oss.kr/dev_competition_activities/show/9b3da5aa-3478-4e00-ba28-7e89c85aef91?page=2
+
 # Architecture
 
 ![arch](./assets/architecture2.png)
